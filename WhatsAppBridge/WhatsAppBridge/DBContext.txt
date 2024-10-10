@@ -1,0 +1,1 @@
+﻿Scaffold-DbContext "Name=ConnectionStrings:WhatsAppLogsDataBase" Microsoft.EntityFrameworkCore.SqlServer -OutputDir LogEntities -t ApiLogs -f
