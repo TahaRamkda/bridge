@@ -1,7 +1,10 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using System.Text.Json;
+using WhatsAppBridge.Handler;
+using WhatsAppBridge.Models.WhatsApp.Webhook;
 using WhatsAppBridge.Settings;
 
 namespace WhatsAppBridge.Controllers
@@ -13,17 +16,20 @@ namespace WhatsAppBridge.Controllers
     {
         private readonly ILogger<WebhookController> _logger;
         private readonly IOptions<WhatsAppConfigurationSetting> _whatsAppConfigurationSetting;
+        private readonly WhatsAppWebhookHandler _whatsAppWebhookHandler;
 
         public WebhookController(ILogger<WebhookController> logger,
-            IOptions<WhatsAppConfigurationSetting> whatsAppConfigurationSetting)
+            IOptions<WhatsAppConfigurationSetting> whatsAppConfigurationSetting,
+            WhatsAppWebhookHandler whatsAppWebhookHandler)
         {
             _logger = logger;
             _whatsAppConfigurationSetting = whatsAppConfigurationSetting;
+            _whatsAppWebhookHandler = whatsAppWebhookHandler;
         }
 
         [HttpGet]
         public async Task<IActionResult> Get([FromQuery(Name = "hub.mode")] string hubMode = "", [FromQuery(Name = "hub.challenge")] int hubChallenge = 0, [FromQuery(Name = "hub.verify_token")] string hubVerifyToken = "")
-        { 
+        {
             //var data = JsonSerializer.Serialize(webhookData);
             _logger.LogInformation("Webhook received with request, hub.mode={hubmode}, hub.challenge={hubchallenge},hub.verify_token={verify_token}", hubMode, hubChallenge, hubVerifyToken);
 
@@ -47,9 +53,33 @@ namespace WhatsAppBridge.Controllers
 
         [HttpPost]
         public async Task<IActionResult> Post(object payload)
-        { 
-            var data = JsonSerializer.Serialize(payload);
-            _logger.LogInformation("Webhook received with data={data}", data);
+        {
+            var data = System.Text.Json.JsonSerializer.Serialize(payload);
+
+            _logger.LogInformation("Facebook webhook received with data={data}", data);
+
+            var model = JsonConvert.DeserializeObject<WhatsAppWebhookModel>(data);
+
+            if (model == null)
+                return BadRequest("Cannot parse data object");
+
+            foreach (var entry in model.entry)
+            {
+                foreach (var change in entry.changes)
+                {
+                    if (String.IsNullOrWhiteSpace(change.field))
+                        continue;
+
+                    switch (change.field.ToLower())
+                    {
+                        case NotificationType.MessageTemplateStatusUpdate:
+                            await _whatsAppWebhookHandler.HandleMessageTemplateStatusUpdate(change);
+                            break;
+                        default:
+                            continue;
+                    }
+                }
+            }
 
             return Ok();
 

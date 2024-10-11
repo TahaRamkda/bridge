@@ -1,7 +1,10 @@
 
+using Microsoft.Extensions.Options;
 using Serilog;
 using System.Configuration;
+using WhatsAppBridge.Handler;
 using WhatsAppBridge.Middleware;
+using WhatsAppBridge.Models;
 using WhatsAppBridge.Settings;
 
 namespace WhatsAppBridge
@@ -16,7 +19,34 @@ namespace WhatsAppBridge
             builder.Host.UseSerilog((context, configuration) => configuration.ReadFrom.Configuration(context.Configuration).Enrich.FromLogContext());
 
             // Add services to the container. 
+
+            //DO NOT CHANGE ORDER OF THE SERVICES
+
+            //Settings
             builder.Services.Configure<WhatsAppConfigurationSetting>(builder.Configuration.GetSection(WhatsAppConfigurationSetting.ConfigKey));
+            builder.Services.Configure<IntegrationConfigurationSettings>(builder.Configuration.GetSection(IntegrationConfigurationSettings.ConfigKey));
+
+            //Global HttpClient
+            builder.Services.AddHttpClient(HttpClientType.facebook_graph_api, (serviceProvider, httpClient) =>
+            {
+                var whatsAppConfiguration = serviceProvider.GetRequiredService<IOptions<WhatsAppConfigurationSetting>>().Value;
+
+                httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {whatsAppConfiguration.AccessToken}");
+                httpClient.BaseAddress = new Uri(whatsAppConfiguration.BaseURL);
+                httpClient.Timeout = TimeSpan.FromSeconds(whatsAppConfiguration.TimeOutInSeconds);
+            });
+
+            builder.Services.AddHttpClient(HttpClientType.integration_api, (serviceProvider, httpClient) =>
+            {
+                var whatsAppConfiguration = serviceProvider.GetRequiredService<IOptions<IntegrationConfigurationSettings>>().Value;
+
+                //httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {whatsAppConfiguration.AccessToken}");
+                httpClient.BaseAddress = new Uri(whatsAppConfiguration.BaseURL);
+                httpClient.Timeout = TimeSpan.FromSeconds(whatsAppConfiguration.TimeOutInSeconds);
+            });
+
+            builder.Services.AddScoped<WhatsAppWebhookHandler>();
+            builder.Services.AddScoped<IntegrationHandler>();
 
             builder.Services.AddControllers();
 
@@ -26,7 +56,10 @@ namespace WhatsAppBridge
 
             var app = builder.Build();
 
-            app.UseExceptionHandlerMiddleware();
+            bool enableGlobalExceptionHandler = Convert.ToBoolean(builder.Configuration["EnableGlobalExceptionHandler"]);
+
+            if (enableGlobalExceptionHandler)
+                app.UseExceptionHandlerMiddleware();
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
@@ -48,7 +81,7 @@ namespace WhatsAppBridge
             }
 
             app.UseHttpsRedirection();
-            
+
             app.UseCors();
 
             app.UseAuthorization();
