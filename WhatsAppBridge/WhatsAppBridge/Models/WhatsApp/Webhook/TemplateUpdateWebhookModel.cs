@@ -2,7 +2,7 @@
 
 namespace WhatsAppBridge.Models.WhatsApp.Webhook
 {
-    public partial class TemplateUpdateWebhook
+    public partial class TemplateUpdateWebhookModel
     {
         [JsonProperty("event")]
         public string Event { get; set; }

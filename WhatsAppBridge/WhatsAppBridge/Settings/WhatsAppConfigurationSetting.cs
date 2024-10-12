@@ -7,5 +7,6 @@
         public string BaseURL { get; set; }
         public string AccessToken { get; set; }
         public int TimeOutInSeconds { get; set; }
+        public int SendMessageBatchSize { get; set; }
     }
 }

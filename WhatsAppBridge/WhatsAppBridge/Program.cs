@@ -47,6 +47,7 @@ namespace WhatsAppBridge
 
             builder.Services.AddScoped<WhatsAppWebhookHandler>();
             builder.Services.AddScoped<IntegrationHandler>();
+            builder.Services.AddScoped<WhatsAppHandler>();
 
             builder.Services.AddControllers();
 

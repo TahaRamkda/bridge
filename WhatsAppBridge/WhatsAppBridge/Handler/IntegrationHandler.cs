@@ -1,15 +1,11 @@
-﻿using Azure.Core;
-using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
-using System.Security.Policy;
-using WhatsAppBridge.Controllers;
 using WhatsAppBridge.Helpers;
 using WhatsAppBridge.Models;
 using WhatsAppBridge.Models.Integration;
 using WhatsAppBridge.Models.WhatsApp;
-using WhatsAppBridge.Models.WhatsApp.Webhook;
+using WhatsAppBridge.Models.WhatsApp.Types;
 using WhatsAppBridge.Settings;
-using static WhatsAppBridge.Models.WhatsApp.Webhook.WhatsAppWebhookModel;
 
 namespace WhatsAppBridge.Handler
 {
@@ -30,7 +26,7 @@ namespace WhatsAppBridge.Handler
             baseUrl = _httpClient.BaseAddress.AbsoluteUri;
         }
 
-        public async Task SendMessageTemplateStatusUpdate(MessageTemplate messageTemplate)
+        public async Task SendMessageTemplateStatusUpdate(MessageTemplateModel messageTemplate)
         {
             try
             {
@@ -42,21 +38,21 @@ namespace WhatsAppBridge.Handler
                     Name = messageTemplate.name,
                     Language = messageTemplate.language,
                     Status = messageTemplate.status,
-                    IsApproved = messageTemplate.status == TemplateStatus.APPROVED.ToString() ? true : false,
+                    IsApproved = messageTemplate.status == TemplateStatusModel.APPROVED.ToString() ? true : false,
                     Category = messageTemplate.category,
                     SubCategory = messageTemplate.sub_category
                 };
 
                 foreach (var component in messageTemplate.components)
                 {
-                    if (component.type == TemplateComponentType.HEADER)
+                    if (component.type == TemplateComponentTypeModel.HEADER)
                     {
                         templateDto.Header = new MessageTemplateDto.HeaderComponent
                         {
                             Format = component.format
                         };
 
-                        if (templateDto.Header.Format == TemplateHeaderFormat.TEXT)
+                        if (templateDto.Header.Format == TemplateHeaderFormatTypeModel.TEXT)
                         {
                             templateDto.Header.Text = component.text;
 
@@ -67,7 +63,7 @@ namespace WhatsAppBridge.Handler
                                 templateDto.Header.Values = examples;
                             }
                         }
-                        else if (templateDto.Header.Format == TemplateHeaderFormat.IMAGE)
+                        else if (templateDto.Header.Format == TemplateHeaderFormatTypeModel.IMAGE)
                         {
                             templateDto.Header.Text = component.text;
 
@@ -77,7 +73,7 @@ namespace WhatsAppBridge.Handler
                                 templateDto.Header.Values = examples;
                             }
                         }
-                        else if (templateDto.Header.Format == TemplateHeaderFormat.DOCUMENT)
+                        else if (templateDto.Header.Format == TemplateHeaderFormatTypeModel.DOCUMENT)
                         {
                             templateDto.Header.Text = component.text;
 
@@ -88,7 +84,7 @@ namespace WhatsAppBridge.Handler
                             }
                         }
                     }
-                    else if (component.type == TemplateComponentType.BODY)
+                    else if (component.type == TemplateComponentTypeModel.BODY)
                     {
                         templateDto.Body = new MessageTemplateDto.BodyComponent
                         {
@@ -104,18 +100,18 @@ namespace WhatsAppBridge.Handler
                             templateDto.Body.TextCount = examples.Count;
                         }
                     }
-                    else if (component.type == TemplateComponentType.FOOTER)
+                    else if (component.type == TemplateComponentTypeModel.FOOTER)
                     {
                         templateDto.Footer = new MessageTemplateDto.FooterComponent
                         {
                             Text = component.text
                         };
                     }
-                    else if (component.type == TemplateComponentType.BUTTONS)
+                    else if (component.type == TemplateComponentTypeModel.BUTTONS)
                     {
                         foreach (var button in component.buttons)
                         {
-                            if (button.type == TemplateButtonType.QUICK_REPLY)
+                            if (button.type == TemplateButtonTypeModel.QUICK_REPLY)
                             {
                                 templateDto.Buttons.Add(new MessageTemplateDto.ButtonComponent
                                 {
@@ -123,7 +119,7 @@ namespace WhatsAppBridge.Handler
                                     Text = button.text
                                 });
                             }
-                            else if (button.type == TemplateButtonType.URL)
+                            else if (button.type == TemplateButtonTypeModel.URL)
                             {
                                 var buttonComp = new MessageTemplateDto.ButtonComponent
                                 {
@@ -141,7 +137,7 @@ namespace WhatsAppBridge.Handler
 
                                 templateDto.Buttons.Add(buttonComp);
                             }
-                            else if (button.type == TemplateButtonType.PHONE_NUMBER)
+                            else if (button.type == TemplateButtonTypeModel.PHONE_NUMBER)
                             {
                                 var buttonComp = new MessageTemplateDto.ButtonComponent
                                 {
@@ -157,14 +153,14 @@ namespace WhatsAppBridge.Handler
                 }
 
                 var requestStr = JsonConvert.SerializeObject(templateDto);
-                var fullUrl = CommonFunction.GetFullUrl(baseUrl, $"//templates/templatepost");
+                var fullUrl = CommonHelper.GetFullUrl(baseUrl, $"//templates/templatepost");
 
-                _logger.LogInformation("Calling Integration TemplatePost method with templateId {templateId } with url {url} and request {request}", templateDto.Id, fullUrl, requestStr);
+                _logger.LogInformation("Executing function SendMessageTemplateStatusUpdate Calling Integration TemplatePost method with templateId {templateId } with url {url} and request {request}", templateDto.Id, fullUrl, requestStr);
 
                 var response = await _httpClient.PostAsync($"/templates/templatepost", new StringContent(requestStr, null, "application/json"));
                 var content = await response.Content.ReadAsStringAsync();
 
-                _logger.LogInformation("Received response of Integration TemplatePost method with templateId {templateId } with url {url} and request {request} and content {content}", templateDto.Id, fullUrl, requestStr, content);
+                _logger.LogInformation("Received response when executing function SendMessageTemplateStatusUpdate of Integration TemplatePost method with templateId {templateId } with url {url} and request {request} and content {content}", templateDto.Id, fullUrl, requestStr, content);
 
             }
             catch (Exception ex)

@@ -1,6 +1,6 @@
-﻿namespace WhatsAppBridge.Models.WhatsApp
+﻿namespace WhatsAppBridge.Models.WhatsApp.Types
 {
-    public static class TemplateHeaderFormat
+    public static class TemplateHeaderFormatTypeModel
     {
         public const string NONE = "NONE";
         public const string TEXT = "TEXT";

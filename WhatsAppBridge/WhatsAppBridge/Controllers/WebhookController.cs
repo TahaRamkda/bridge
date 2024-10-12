@@ -28,7 +28,7 @@ namespace WhatsAppBridge.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Get([FromQuery(Name = "hub.mode")] string hubMode = "", [FromQuery(Name = "hub.challenge")] int hubChallenge = 0, [FromQuery(Name = "hub.verify_token")] string hubVerifyToken = "")
+        public ActionResult Get([FromQuery(Name = "hub.mode")] string hubMode = "", [FromQuery(Name = "hub.challenge")] int hubChallenge = 0, [FromQuery(Name = "hub.verify_token")] string hubVerifyToken = "")
         {
             //var data = JsonSerializer.Serialize(webhookData);
             _logger.LogInformation("Webhook received with request, hub.mode={hubmode}, hub.challenge={hubchallenge},hub.verify_token={verify_token}", hubMode, hubChallenge, hubVerifyToken);
@@ -59,7 +59,6 @@ namespace WhatsAppBridge.Controllers
             _logger.LogInformation("Facebook webhook received with data={data}", data);
 
             var model = JsonConvert.DeserializeObject<WhatsAppWebhookModel>(data);
-
             if (model == null)
                 return BadRequest("Cannot parse data object");
 
@@ -72,7 +71,7 @@ namespace WhatsAppBridge.Controllers
 
                     switch (change.field.ToLower())
                     {
-                        case NotificationType.MessageTemplateStatusUpdate:
+                        case NotificationTypeModel.MessageTemplateStatusUpdate:
                             await _whatsAppWebhookHandler.HandleMessageTemplateStatusUpdate(change);
                             break;
                         default:

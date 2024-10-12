@@ -1,6 +1,6 @@
-﻿namespace WhatsAppBridge.Models.WhatsApp
+﻿namespace WhatsAppBridge.Models.WhatsApp.Types
 {
-    public static class TemplateStatus
+    public static class TemplateStatusModel
     {
         public const string PENDING = "PENDING";
         public const string APPROVED = "APPROVED";

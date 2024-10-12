@@ -1,6 +1,6 @@
 ﻿namespace WhatsAppBridge.Models.WhatsApp
 {
-    public class MessageTemplate
+    public class MessageTemplateModel
     {
         public string id { get; set; }
         public string name { get; set; }

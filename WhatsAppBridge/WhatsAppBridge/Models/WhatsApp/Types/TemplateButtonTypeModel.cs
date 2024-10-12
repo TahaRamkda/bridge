@@ -1,6 +1,6 @@
-﻿namespace WhatsAppBridge.Models.WhatsApp
+﻿namespace WhatsAppBridge.Models.WhatsApp.Types
 {
-    public static class TemplateButtonType
+    public static class TemplateButtonTypeModel
     {
         public const string QUICK_REPLY = "QUICK_REPLY";
         public const string URL = "URL";

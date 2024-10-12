@@ -1,6 +1,6 @@
-﻿namespace WhatsAppBridge.Models.WhatsApp
+﻿namespace WhatsAppBridge.Models.WhatsApp.Types
 {
-    public static class TemplateComponentType
+    public static class TemplateComponentTypeModel
     {
         public const string HEADER = "HEADER";
         public const string BODY = "BODY";
