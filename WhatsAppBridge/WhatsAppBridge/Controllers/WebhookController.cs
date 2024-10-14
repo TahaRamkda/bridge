@@ -29,8 +29,7 @@ namespace WhatsAppBridge.Controllers
 
         [HttpGet]
         public ActionResult Get([FromQuery(Name = "hub.mode")] string hubMode = "", [FromQuery(Name = "hub.challenge")] int hubChallenge = 0, [FromQuery(Name = "hub.verify_token")] string hubVerifyToken = "")
-        {
-            //var data = JsonSerializer.Serialize(webhookData);
+        { 
             _logger.LogInformation("Webhook received with request, hub.mode={hubmode}, hub.challenge={hubchallenge},hub.verify_token={verify_token}", hubMode, hubChallenge, hubVerifyToken);
 
             if (!String.IsNullOrEmpty(hubVerifyToken) && hubChallenge > 0)
@@ -45,8 +44,7 @@ namespace WhatsAppBridge.Controllers
                     _logger.LogInformation("Declined verify webhook request with unauthorized with hub.mode={hubmode}, hub.challenge={hubchallenge},hub.verify_token={verify_token}", hubMode, hubChallenge, hubVerifyToken);
                     return Unauthorized("Unauthorized request");
                 }
-            }
-
+            } 
 
             return Ok();
         }
@@ -60,7 +58,7 @@ namespace WhatsAppBridge.Controllers
 
             var model = JsonConvert.DeserializeObject<WhatsAppWebhookModel>(data);
             if (model == null)
-                return BadRequest("Cannot parse data object");
+                return BadRequest("Cannot parse received facebook webhook data object");
 
             foreach (var entry in model.entry)
             {

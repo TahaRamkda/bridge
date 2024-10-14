@@ -6,5 +6,6 @@
         public const string BODY = "BODY";
         public const string FOOTER = "FOOTER";
         public const string BUTTONS = "BUTTONS";
+        public const string BUTTON = "BUTTON";
     }
 }

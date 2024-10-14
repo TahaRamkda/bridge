@@ -1,4 +1,6 @@
-﻿namespace WhatsAppBridge.Models.Integration
+﻿using Microsoft.AspNetCore.Components.Web;
+
+namespace WhatsAppBridge.Models.Integration
 {
     public partial class MessageTemplateDto
     {
@@ -23,25 +25,25 @@
         {
             public HeaderComponent()
             {
-                Values = new List<string>();
+                Values = new List<KeyValue>();
             }
 
             public string Format { get; set; } = String.Empty;
             public string Text { get; set; } = String.Empty;
             public int TextCount { get; set; }
-            public List<string> Values { get; set; }
+            public List<KeyValue> Values { get; set; }
         }
 
         public partial class BodyComponent
         {
             public BodyComponent()
             {
-                Values = new List<string>();
+                Values = new List<KeyValue>();
             }
 
             public string Text { get; set; } = String.Empty;
             public int TextCount { get; set; }
-            public List<string> Values { get; set; }
+            public List<KeyValue> Values { get; set; }
         }
 
         public partial class FooterComponent
@@ -53,7 +55,7 @@
         {
             public ButtonComponent()
             {
-                Values = new List<string>();
+                Values = new List<KeyValue>();
             }
 
             public string Type { get; set; }
@@ -61,7 +63,14 @@
             public string PhoneNumber { get; set; } = String.Empty;
             public int TextCount { get; set; }
             public string Url { get; set; } = String.Empty;
-            public List<string> Values { get; set; }
+            public int Index { get; set; }
+            public List<KeyValue> Values { get; set; }
+        }
+
+        public class KeyValue
+        {
+            public string value { get; set; }
+            public int index { get; set; }
         }
     }
 }

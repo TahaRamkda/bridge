@@ -48,7 +48,7 @@ namespace WhatsAppBridge.Handler
 
                 var messageTemplate = JsonConvert.DeserializeObject<MessageTemplateModel>(await response.Content.ReadAsStringAsync());
 
-                await _integrationHandler.SendMessageTemplateStatusUpdate(messageTemplate);
+                await _integrationHandler.SendMessageTemplateStatusUpdate(messageTemplate, true);
 
             }
             catch (Exception ex)
