@@ -1,7 +1,11 @@
 
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using Serilog;
-using System.Configuration;
+using System.Text;
 using WhatsAppBridge.Handler;
 using WhatsAppBridge.Middleware;
 using WhatsAppBridge.Models;
@@ -23,6 +27,7 @@ namespace WhatsAppBridge
             //DO NOT CHANGE ORDER OF THE SERVICES
 
             //Settings
+            builder.Services.Configure<AuthenticationConfigurationSettings>(builder.Configuration.GetSection(AuthenticationConfigurationSettings.ConfigKey));
             builder.Services.Configure<WhatsAppConfigurationSetting>(builder.Configuration.GetSection(WhatsAppConfigurationSetting.ConfigKey));
             builder.Services.Configure<IntegrationConfigurationSettings>(builder.Configuration.GetSection(IntegrationConfigurationSettings.ConfigKey));
 
@@ -49,11 +54,62 @@ namespace WhatsAppBridge
             builder.Services.AddScoped<IntegrationHandler>();
             builder.Services.AddScoped<WhatsAppHandler>();
 
+            builder.Services.AddAuthentication(options =>
+            {
+                options.DefaultScheme = "JWT_OR_API_KEY"; // This will allow you to configure multiple schemes
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme; // Use JWT by default for challenge.
+            }).AddJwtBearer(options =>
+            {
+                // JWT Bearer settings go here.
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("YourJWTSecretKeyHere")),
+                    ValidateIssuer = false,
+                    ValidateAudience = false
+                };
+            })
+            .AddScheme<AuthenticationSchemeOptions, ApiKeyAuthenticationHandler>("ApiKey", null);
+
+            builder.Services.AddAuthorization(options =>
+            {
+                options.AddPolicy(AuthenticationSchemes.ApiKeyPolicy, policy => policy.RequireAuthenticatedUser().AddAuthenticationSchemes("ApiKey"));
+                options.AddPolicy(AuthenticationSchemes.BearerPolicy, policy => policy.RequireAuthenticatedUser().AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme));
+            });
+
             builder.Services.AddControllers();
 
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen();
+
+            //Authentication
+            //builder.Services.AddSwaggerGen();
+            builder.Services.AddSwaggerGen(c =>
+            {
+                c.SwaggerDoc("v1", new OpenApiInfo { Title = "ServiceName", Version = "1" });
+                c.AddSecurityDefinition("ApiKey", new OpenApiSecurityScheme
+                {
+                    Name = "x-api-key",
+                    In = ParameterLocation.Header,
+                    Type = SecuritySchemeType.ApiKey,
+                    Description = "Authorization by x-api-key inside request's header",
+                    Scheme = "ApiKeyScheme"
+                });
+
+                var key = new OpenApiSecurityScheme()
+                {
+                    Reference = new OpenApiReference
+                    {
+                        Type = ReferenceType.SecurityScheme,
+                        Id = "ApiKey"
+                    },
+                    In = ParameterLocation.Header
+                };
+
+                var requirement = new OpenApiSecurityRequirement { { key, new List<string>() } };
+
+                c.AddSecurityRequirement(requirement);
+            });
 
             var app = builder.Build();
 
@@ -84,6 +140,8 @@ namespace WhatsAppBridge
             app.UseHttpsRedirection();
 
             app.UseCors();
+
+            app.UseAuthentication();
 
             app.UseAuthorization();
 

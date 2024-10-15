@@ -102,7 +102,7 @@ namespace WhatsAppBridge.Handler
                 var batches = model.PhoneNumbers.ChunkBy(batchSize);
 
                 _logger.LogInformation("Calling function HandleSendMessage with received object {object} with batch size {batchSize} and totalbatchCount {totalbatchCount}", JsonConvert.SerializeObject(model), batchSize, batches.Count);
-                  
+
                 dynamic messageContent = GetMessageContent(model);
 
                 for (int i = 0; i < batches.Count; i++)
@@ -112,9 +112,10 @@ namespace WhatsAppBridge.Handler
 
                     try
                     {
+                        var batch = batches[i];
                         var batchRequest = new BatchMessageRequestModel
                         {
-                            batch = batches[i].Select(recipient => new Batch
+                            batch = batch.Select(recipient => new Batch
                             {
                                 method = "POST",
                                 relative_url = $"{model.PhoneId}/messages",
@@ -133,17 +134,34 @@ namespace WhatsAppBridge.Handler
                         _logger.LogInformation("Received Batch Response in function HandleSendMessage with received object {object} with batch size {batchSize} and totalbatchCount {totalbatchCount} and batchIndex {batchIndex} and batchRequest {batchRequest} and batchResponse {batchResponse}", JsonConvert.SerializeObject(model), batchSize, batches.Count, (i + 1), requestStr, responseStr);
 
                         var responseModel = JsonConvert.DeserializeObject<List<BatchMessageResponseModel>>(responseStr);
-                        foreach (var response in responseModel)
+                        for (int j = 0; j < batch.Count; j++)
                         {
+                            var response = responseModel[j];
+                            response.bodyResponse = JsonConvert.DeserializeObject<BatchMessageResponseModel.BodyResponse>(response.body);
+
                             if (response.code == 200) //If success
                             {
-                                response.bodyResponse = JsonConvert.DeserializeObject<BatchMessageResponseModel.BodyResponse>(response.body);
                                 var responseDto = new SendMessageResponseDto
                                 {
-                                    PhoneNumber = response.bodyResponse.contacts[0].input,
+                                    PhoneNumber = batch[j],
                                     WAId = response.bodyResponse.contacts[0].wa_id,
                                     Status = response.code,
                                     MessageId = response.bodyResponse.messages[0].id
+                                };
+
+                                models.Add(responseDto);
+                            }
+                            else
+                            {
+                                var responseDto = new SendMessageResponseDto
+                                {
+                                    PhoneNumber = batch[j],
+                                    WAId = String.Empty,
+                                    Status = response.bodyResponse.error.code,
+                                    MessageId = String.Empty,
+                                    Errors = new List<string> {
+                                        response.bodyResponse.error.message
+                                    }
                                 };
 
                                 models.Add(responseDto);
@@ -282,10 +300,11 @@ namespace WhatsAppBridge.Handler
             return results;
         }
 
-        public async Task HandleSendTemplateMessage(SendMessageTemplateRequestDto model)
+        public async Task<SendMessageResponseDto> HandleSendTemplateMessage(SendMessageTemplateRequestDto model)
         {
             _logger.LogInformation("Calling function HandleSendTemplateMessage with received payload {payload}", JsonConvert.SerializeObject(model));
 
+            model.PhoneNumber = model.PhoneNumber.Replace("+", "").Trim();
             string requestStr = String.Empty;
             string responseStr = String.Empty;
 
@@ -294,7 +313,7 @@ namespace WhatsAppBridge.Handler
                 var template = new SendMessageTemplateModel
                 {
                     messaging_product = "whatsapp",
-                    to = model.PhoneNumber.Replace("+", "").Trim(),
+                    to = model.PhoneNumber,
                     recipient_type = "individual",
                     type = "template",
                     template = new SendMessageTemplateModel.Template
@@ -314,7 +333,7 @@ namespace WhatsAppBridge.Handler
                     {
                         var component = new SendMessageTemplateModel.Template.Component
                         {
-                            type = obj.ComponentType
+                            type = "HEADER"
                         };
 
                         foreach (var value in obj.Values.OrderBy(x => x.Index))
@@ -372,7 +391,7 @@ namespace WhatsAppBridge.Handler
                     {
                         var component = new SendMessageTemplateModel.Template.Component
                         {
-                            type = obj.ComponentType
+                            type = "BODY"
                         };
 
                         foreach (var value in obj.Values.OrderBy(x => x.Index))
@@ -394,7 +413,7 @@ namespace WhatsAppBridge.Handler
                             //For Button we pass as index
                             var component = new SendMessageTemplateModel.Template.Component
                             {
-                                type = obj.ComponentType,
+                                type = "BUTTON",
                                 sub_type = value.Type,
                                 index = value.Index
                             };
@@ -445,18 +464,40 @@ namespace WhatsAppBridge.Handler
                 _logger.LogInformation("Received Response in function HandleSendTemplateMessage with received object {object} and requestStr {requestStr} and responseStr {responseStr}", JsonConvert.SerializeObject(model), requestStr, responseStr);
 
                 var response = JsonConvert.DeserializeObject<BatchMessageResponseModel.BodyResponse>(responseStr);
-                var responseDto = new SendMessageResponseDto
+                if (response.error != null)
                 {
-                    PhoneNumber = response.contacts[0].input,
-                    WAId = response.contacts[0].wa_id,
-                    Status = 200,
-                    MessageId = response.messages[0].id
-                };
+                    var responseDto = new SendMessageResponseDto
+                    {
+                        PhoneNumber = model.PhoneNumber,
+                        WAId = String.Empty,
+                        Status = response.error.code,
+                        MessageId = String.Empty,
+                        Errors = new List<string> {
+                            response.error.message
+                        }
+                    };
+
+                    return responseDto;
+                }
+                else
+                {
+                    var responseDto = new SendMessageResponseDto
+                    {
+                        PhoneNumber = response.contacts[0].input,
+                        WAId = response.contacts[0].wa_id,
+                        Status = 200,
+                        MessageId = response.messages[0].id
+                    };
+
+                    return responseDto;
+                }
             }
             catch (Exception ex)
             {
                 _logger.LogError("Exception occurred {exception} when executing function HandleSendTemplateMessage with received object {object}", ex, JsonConvert.SerializeObject(model));
             }
+
+            return null;
         }
 
         #endregion

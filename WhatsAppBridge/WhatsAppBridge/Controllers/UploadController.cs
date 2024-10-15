@@ -11,7 +11,7 @@ namespace WhatsAppBridge.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [AllowAnonymous]
+    [Authorize(Policy = AuthenticationSchemes.ApiKeyPolicy)]
     public class UploadController : ControllerBase
     {
         private readonly ILogger<UploadController> _logger;

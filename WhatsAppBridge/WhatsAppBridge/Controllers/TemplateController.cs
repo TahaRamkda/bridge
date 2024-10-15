@@ -2,20 +2,18 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
-using Serilog.Events;
 using WhatsAppBridge.Handler;
 using WhatsAppBridge.Helpers;
 using WhatsAppBridge.Models;
 using WhatsAppBridge.Models.Integration;
 using WhatsAppBridge.Models.WhatsApp;
-using WhatsAppBridge.Models.WhatsApp.Webhook;
 using WhatsAppBridge.Settings;
 
 namespace WhatsAppBridge.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [AllowAnonymous]
+    [Authorize(Policy = AuthenticationSchemes.ApiKeyPolicy)]
     public class TemplateController : ControllerBase
     {
         private readonly ILogger<TemplateController> _logger;
@@ -101,9 +99,22 @@ namespace WhatsAppBridge.Controllers
             if (data == null)
                 return BadRequest("Cannot parse received data object");
 
-            await _whatsAppHandler.HandleSendTemplateMessage(data);
+            var response = await _whatsAppHandler.HandleSendTemplateMessage(data);
 
-            return Ok();
+            if (response == null)
+            {
+                return Ok(new ApiResult
+                {
+                    StatusCode = 400,
+                    Result = "Something went wrong while sending message"
+                });
+            }
+
+            return Ok(new ApiResult
+            {
+                Success = response.Status == 200,
+                Result = response
+            });
         }
     }
 }

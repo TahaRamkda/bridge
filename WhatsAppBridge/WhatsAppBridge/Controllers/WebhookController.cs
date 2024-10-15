@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
-using System.Text.Json;
 using WhatsAppBridge.Handler;
 using WhatsAppBridge.Models.WhatsApp.Webhook;
 using WhatsAppBridge.Settings;
@@ -29,7 +28,7 @@ namespace WhatsAppBridge.Controllers
 
         [HttpGet]
         public ActionResult Get([FromQuery(Name = "hub.mode")] string hubMode = "", [FromQuery(Name = "hub.challenge")] int hubChallenge = 0, [FromQuery(Name = "hub.verify_token")] string hubVerifyToken = "")
-        { 
+        {
             _logger.LogInformation("Webhook received with request, hub.mode={hubmode}, hub.challenge={hubchallenge},hub.verify_token={verify_token}", hubMode, hubChallenge, hubVerifyToken);
 
             if (!String.IsNullOrEmpty(hubVerifyToken) && hubChallenge > 0)
@@ -44,13 +43,13 @@ namespace WhatsAppBridge.Controllers
                     _logger.LogInformation("Declined verify webhook request with unauthorized with hub.mode={hubmode}, hub.challenge={hubchallenge},hub.verify_token={verify_token}", hubMode, hubChallenge, hubVerifyToken);
                     return Unauthorized("Unauthorized request");
                 }
-            } 
+            }
 
             return Ok();
         }
 
         [HttpPost]
-        public async Task<IActionResult> Post(object payload)
+        public async Task<IActionResult> Post(string client_Id, object payload)
         {
             var data = System.Text.Json.JsonSerializer.Serialize(payload);
 

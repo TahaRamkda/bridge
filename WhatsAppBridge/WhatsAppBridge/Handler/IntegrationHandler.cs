@@ -230,7 +230,6 @@ namespace WhatsAppBridge.Handler
                 }
 
                 return templateDto;
-
             }
             catch (Exception ex)
             {
