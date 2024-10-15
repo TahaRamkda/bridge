@@ -84,11 +84,166 @@ namespace WhatsAppBridge.Handler
             return messageContent;
         }
 
+        private SendMessageTemplateModel GetTemplateContent(SendMessageTemplateRequestDto model)
+        {
+            var template = new SendMessageTemplateModel
+            {
+                messaging_product = "whatsapp",
+                to = String.Empty,
+                recipient_type = "individual",
+                type = "template",
+                template = new SendMessageTemplateModel.Template
+                {
+                    name = model.TemplateName.Trim(),
+                    language = new SendMessageTemplateModel.Template.Language
+                    {
+                        code = model.LanguageCode
+                    }
+                }
+            };
+
+            foreach (var obj in model.Components)
+            {
+                //HEADER TYPE COMPONENT
+                if (obj.ComponentType.ToUpper() == TemplateComponentTypeModel.HEADER.ToUpper())
+                {
+                    var component = new SendMessageTemplateModel.Template.Component
+                    {
+                        type = "HEADER"
+                    };
+
+                    foreach (var value in obj.Values.OrderBy(x => x.Index))
+                    {
+                        var valueType = value.Type.ToUpper();
+                        switch (valueType)
+                        {
+                            case TemplateHeaderFormatTypeModel.NONE:
+                                break;
+                            case TemplateHeaderFormatTypeModel.TEXT:
+                                component.parameters.Add(new
+                                {
+                                    type = TemplateHeaderFormatTypeModel.TEXT.ToLower(),
+                                    text = value.Value ?? ""
+                                });
+                                break;
+                            case TemplateHeaderFormatTypeModel.IMAGE:
+                                component.parameters.Add(new
+                                {
+                                    type = TemplateHeaderFormatTypeModel.IMAGE.ToLower(),
+                                    image = new
+                                    {
+                                        id = value.Value ?? ""
+                                    }
+                                });
+                                break;
+                            case TemplateHeaderFormatTypeModel.DOCUMENT:
+                                component.parameters.Add(new
+                                {
+                                    type = TemplateHeaderFormatTypeModel.DOCUMENT.ToLower(),
+                                    document = new
+                                    {
+                                        id = value.Value ?? ""
+                                    }
+                                });
+                                break;
+                            case TemplateHeaderFormatTypeModel.VIDEO:
+                                component.parameters.Add(new
+                                {
+                                    type = TemplateHeaderFormatTypeModel.VIDEO.ToLower(),
+                                    video = new
+                                    {
+                                        id = value.Value ?? ""
+                                    }
+                                });
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+
+                    template.template.components.Add(component);
+                }
+                else if (obj.ComponentType.ToUpper() == TemplateComponentTypeModel.BODY.ToUpper())
+                {
+                    var component = new SendMessageTemplateModel.Template.Component
+                    {
+                        type = "BODY"
+                    };
+
+                    foreach (var value in obj.Values.OrderBy(x => x.Index))
+                    {
+                        component.parameters.Add(new
+                        {
+                            type = TemplateHeaderFormatTypeModel.TEXT.ToLower(),
+                            text = value.Value ?? ""
+                        });
+                    }
+
+                    template.template.components.Add(component);
+                }
+                else if (obj.ComponentType.ToUpper() == TemplateComponentTypeModel.BUTTONS.ToUpper()
+                    || obj.ComponentType.ToUpper() == TemplateComponentTypeModel.BUTTON.ToUpper())
+                {
+                    foreach (var value in obj.Values.OrderBy(x => x.Index))
+                    {
+                        //For Button we pass as index
+                        var component = new SendMessageTemplateModel.Template.Component
+                        {
+                            type = "BUTTON",
+                            sub_type = value.Type,
+                            index = value.Index
+                        };
+
+                        var valueType = value.Type.ToUpper();
+                        switch (valueType)
+                        {
+                            case TemplateButtonTypeModel.QUICK_REPLY:
+                                component.parameters.Add(new
+                                {
+                                    //type = TemplateButtonTypeModel.QUICK_REPLY.ToLower(),
+                                    type = "text",
+                                    text = value.Value ?? ""
+                                });
+                                break;
+                            case TemplateButtonTypeModel.PHONE_NUMBER:
+                                component.parameters.Add(new
+                                {
+                                    type = "text",
+                                    //index = value.Index,
+                                    text = value.Value ?? ""
+                                });
+                                break;
+                            case TemplateButtonTypeModel.URL:
+                                component.parameters.Add(new
+                                {
+                                    type = "text",
+                                    //index = value.Index,
+                                    text = value.Value ?? ""
+                                });
+                                break;
+
+                            default:
+                                break;
+                        }
+
+                        template.template.components.Add(component);
+                    }
+                }
+            }
+
+            return template;
+        }
+
         #endregion
 
         #region Methods
 
-        public async Task<List<SendMessageResponseDto>> HandleSendMessage(SendMessageRequestDto model)
+        /// <summary>
+        /// Send batch messages
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
+        public async Task<List<SendMessageResponseDto>> HandleSendBatchMessage(SendMessageRequestDto model)
         {
             List<SendMessageResponseDto> models = new List<SendMessageResponseDto>();
 
@@ -97,11 +252,11 @@ namespace WhatsAppBridge.Handler
                 model.Type = model.Type.ToLower();
                 model.PhoneId = model.PhoneId.Trim();
                 model.Message = model.Message.Trim();
-                model.PhoneNumbers = model.PhoneNumbers.Where(x => !String.IsNullOrWhiteSpace(x)).Select(x => x.Trim()).ToList();
+                model.PhoneNumbers = model.PhoneNumbers.Where(x => !String.IsNullOrWhiteSpace(x)).Select(x => x.Replace("+", "").Trim()).ToList();
                 int batchSize = _whatsAppConfigurationSetting.Value.SendMessageBatchSize;
                 var batches = model.PhoneNumbers.ChunkBy(batchSize);
 
-                _logger.LogInformation("Calling function HandleSendMessage with received object {object} with batch size {batchSize} and totalbatchCount {totalbatchCount}", JsonConvert.SerializeObject(model), batchSize, batches.Count);
+                _logger.LogInformation("Calling function HandleSendBatchMessage with received object {object} with batch size {batchSize} and totalbatchCount {totalbatchCount}", JsonConvert.SerializeObject(model), batchSize, batches.Count);
 
                 dynamic messageContent = GetMessageContent(model);
 
@@ -125,13 +280,13 @@ namespace WhatsAppBridge.Handler
 
                         requestStr = JsonConvert.SerializeObject(batchRequest);
 
-                        _logger.LogInformation("Created Batch Request in function HandleSendMessage with received object {object} with batch size {batchSize} and totalbatchCount {totalbatchCount} and batchIndex {batchIndex} and batchRequest {batchRequest}", JsonConvert.SerializeObject(model), batchSize, batches.Count, (i + 1), requestStr);
+                        _logger.LogInformation("Created Batch Request in function HandleSendBatchMessage with received object {object} with batch size {batchSize} and totalbatchCount {totalbatchCount} and batchIndex {batchIndex} and batchRequest {batchRequest}", JsonConvert.SerializeObject(model), batchSize, batches.Count, (i + 1), requestStr);
 
                         // Send the batch request
                         var resp = await _httpClient.PostAsync("", new StringContent(requestStr, null, "application/json"));
                         responseStr = await resp.Content.ReadAsStringAsync();
 
-                        _logger.LogInformation("Received Batch Response in function HandleSendMessage with received object {object} with batch size {batchSize} and totalbatchCount {totalbatchCount} and batchIndex {batchIndex} and batchRequest {batchRequest} and batchResponse {batchResponse}", JsonConvert.SerializeObject(model), batchSize, batches.Count, (i + 1), requestStr, responseStr);
+                        _logger.LogInformation("Received Batch Response in function HandleSendBatchMessage with received object {object} with batch size {batchSize} and totalbatchCount {totalbatchCount} and batchIndex {batchIndex} and batchRequest {batchRequest} and batchResponse {batchResponse}", JsonConvert.SerializeObject(model), batchSize, batches.Count, (i + 1), requestStr, responseStr);
 
                         var responseModel = JsonConvert.DeserializeObject<List<BatchMessageResponseModel>>(responseStr);
                         for (int j = 0; j < batch.Count; j++)
@@ -170,18 +325,126 @@ namespace WhatsAppBridge.Handler
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError("Exception occurred {exception} when executing function HandleSendMessage with received object {object} with batch size {batchSize} and batchCount {batchCount} and batchIndex {batchIndex} and batchRequest {batchRequest} and batchResponse {batchResponse}", ex, JsonConvert.SerializeObject(model), batchSize, batches.Count, i, requestStr, responseStr);
+                        _logger.LogError("Exception occurred {exception} when executing function HandleSendBatchMessage with received object {object} with batch size {batchSize} and batchCount {batchCount} and batchIndex {batchIndex} and batchRequest {batchRequest} and batchResponse {batchResponse}", ex, JsonConvert.SerializeObject(model), batchSize, batches.Count, i, requestStr, responseStr);
                     }
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError("Exception occurred {exception} when executing function HandleSendMessage with received object {object}", ex, JsonConvert.SerializeObject(model));
+                _logger.LogError("Exception occurred {exception} when executing function HandleSendBatchMessage with received object {object}", ex, JsonConvert.SerializeObject(model));
             }
+
+            _logger.LogInformation("Execution ends for function HandleSendBatchMessage with received object {object} and response {response}", JsonConvert.SerializeObject(model), JsonConvert.SerializeObject(models));
 
             return models;
         }
 
+        /// <summary>
+        /// Send batch template messages
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
+        public async Task<List<SendMessageResponseDto>> HandleSendBatchTemplateMessage(SendMessageTemplateRequestDto model)
+        {
+            List<SendMessageResponseDto> models = new List<SendMessageResponseDto>();
+
+            try
+            {
+
+                model.PhoneNumbers = model.PhoneNumbers.Where(x => !String.IsNullOrWhiteSpace(x)).Select(x => x.Replace("+", "").Trim()).ToList();
+                int batchSize = _whatsAppConfigurationSetting.Value.SendMessageBatchSize;
+                var batches = model.PhoneNumbers.ChunkBy(batchSize);
+
+                _logger.LogInformation("Calling function HandleSendBatchTemplateMessage with received object {object} with batch size {batchSize} and totalbatchCount {totalbatchCount}", JsonConvert.SerializeObject(model), batchSize, batches.Count);
+
+                var template = GetTemplateContent(model);
+
+                for (int i = 0; i < batches.Count; i++)
+                {
+                    string requestStr = String.Empty;
+                    string responseStr = String.Empty;
+
+                    try
+                    {
+                        var batch = batches[i];
+                        var batchRequest = new BatchMessageRequestModel
+                        {
+                            batch = batch.Select(recipient => new Batch
+                            {
+                                method = "POST",
+                                relative_url = $"{model.PhoneId}/messages",
+                                body = $"messaging_product=whatsapp&recipient_type=individual&to={recipient}&type={template.type}&{template.type}={JsonConvert.SerializeObject(template.template)}"
+                            }).ToList()
+                        };
+
+                        requestStr = JsonConvert.SerializeObject(batchRequest);
+
+                        _logger.LogInformation("Created Batch Request in function HandleSendBatchTemplateMessage with received object {object} with batch size {batchSize} and totalbatchCount {totalbatchCount} and batchIndex {batchIndex} and batchRequest {batchRequest}", JsonConvert.SerializeObject(model), batchSize, batches.Count, (i + 1), requestStr);
+
+                        // Send the batch request
+                        var resp = await _httpClient.PostAsync("", new StringContent(requestStr, null, "application/json"));
+                        responseStr = await resp.Content.ReadAsStringAsync();
+
+                        _logger.LogInformation("Received Batch Response in function HandleSendBatchTemplateMessage with received object {object} with batch size {batchSize} and totalbatchCount {totalbatchCount} and batchIndex {batchIndex} and batchRequest {batchRequest} and batchResponse {batchResponse}", JsonConvert.SerializeObject(model), batchSize, batches.Count, (i + 1), requestStr, responseStr);
+
+                        var responseModel = JsonConvert.DeserializeObject<List<BatchMessageResponseModel>>(responseStr);
+                        for (int j = 0; j < batch.Count; j++)
+                        {
+                            var response = responseModel[j];
+                            response.bodyResponse = JsonConvert.DeserializeObject<BatchMessageResponseModel.BodyResponse>(response.body);
+
+                            if (response.code == 200) //If success
+                            {
+                                var responseDto = new SendMessageResponseDto
+                                {
+                                    PhoneNumber = batch[j],
+                                    WAId = response.bodyResponse.contacts[0].wa_id,
+                                    Status = response.code,
+                                    MessageId = response.bodyResponse.messages[0].id
+                                };
+
+                                models.Add(responseDto);
+                            }
+                            else
+                            {
+                                var responseDto = new SendMessageResponseDto
+                                {
+                                    PhoneNumber = batch[j],
+                                    WAId = String.Empty,
+                                    Status = response.bodyResponse.error.code,
+                                    MessageId = String.Empty,
+                                    Errors = new List<string> {
+                                        response.bodyResponse.error.message
+                                    }
+                                };
+
+                                models.Add(responseDto);
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError("Exception occurred {exception} when executing function HandleSendBatchTemplateMessage with received object {object} with batch size {batchSize} and batchCount {batchCount} and batchIndex {batchIndex} and batchRequest {batchRequest} and batchResponse {batchResponse}", ex, JsonConvert.SerializeObject(model), batchSize, batches.Count, i, requestStr, responseStr);
+
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Exception occurred {exception} when executing function HandleSendBatchTemplateMessage with received object {object}", ex, JsonConvert.SerializeObject(model));
+            }
+
+            _logger.LogInformation("Execution ends for function HandleSendBatchTemplateMessage with received object {object} and response {response}", JsonConvert.SerializeObject(model), JsonConvert.SerializeObject(models));
+
+            return models;
+        }
+
+        /// <summary>
+        /// Handle media upload
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
+        /// <exception cref="BadHttpRequestException"></exception>
         public async Task<List<UploadMediaResultDto>> HandleMediaUpload(UploadMediaDto model)
         {
             _logger.LogInformation("Calling function HandleMediaUpload with received payload {payload}", JsonConvert.SerializeObject(model));
@@ -298,206 +561,6 @@ namespace WhatsAppBridge.Handler
             }
 
             return results;
-        }
-
-        public async Task<SendMessageResponseDto> HandleSendTemplateMessage(SendMessageTemplateRequestDto model)
-        {
-            _logger.LogInformation("Calling function HandleSendTemplateMessage with received payload {payload}", JsonConvert.SerializeObject(model));
-
-            model.PhoneNumber = model.PhoneNumber.Replace("+", "").Trim();
-            string requestStr = String.Empty;
-            string responseStr = String.Empty;
-
-            try
-            {
-                var template = new SendMessageTemplateModel
-                {
-                    messaging_product = "whatsapp",
-                    to = model.PhoneNumber,
-                    recipient_type = "individual",
-                    type = "template",
-                    template = new SendMessageTemplateModel.Template
-                    {
-                        name = model.TemplateName.Trim(),
-                        language = new SendMessageTemplateModel.Template.Language
-                        {
-                            code = model.LanguageCode
-                        }
-                    }
-                };
-
-                foreach (var obj in model.Components)
-                {
-                    //HEADER TYPE COMPONENT
-                    if (obj.ComponentType.ToUpper() == TemplateComponentTypeModel.HEADER.ToUpper())
-                    {
-                        var component = new SendMessageTemplateModel.Template.Component
-                        {
-                            type = "HEADER"
-                        };
-
-                        foreach (var value in obj.Values.OrderBy(x => x.Index))
-                        {
-                            var valueType = value.Type.ToUpper();
-                            switch (valueType)
-                            {
-                                case TemplateHeaderFormatTypeModel.NONE:
-                                    break;
-                                case TemplateHeaderFormatTypeModel.TEXT:
-                                    component.parameters.Add(new
-                                    {
-                                        type = TemplateHeaderFormatTypeModel.TEXT.ToLower(),
-                                        text = value.Value ?? ""
-                                    });
-                                    break;
-                                case TemplateHeaderFormatTypeModel.IMAGE:
-                                    component.parameters.Add(new
-                                    {
-                                        type = TemplateHeaderFormatTypeModel.IMAGE.ToLower(),
-                                        image = new
-                                        {
-                                            id = value.Value ?? ""
-                                        }
-                                    });
-                                    break;
-                                case TemplateHeaderFormatTypeModel.DOCUMENT:
-                                    component.parameters.Add(new
-                                    {
-                                        type = TemplateHeaderFormatTypeModel.DOCUMENT.ToLower(),
-                                        document = new
-                                        {
-                                            id = value.Value ?? ""
-                                        }
-                                    });
-                                    break;
-                                case TemplateHeaderFormatTypeModel.VIDEO:
-                                    component.parameters.Add(new
-                                    {
-                                        type = TemplateHeaderFormatTypeModel.VIDEO.ToLower(),
-                                        video = new
-                                        {
-                                            id = value.Value ?? ""
-                                        }
-                                    });
-                                    break;
-                                default:
-                                    break;
-                            }
-                        }
-
-                        template.template.components.Add(component);
-                    }
-                    else if (obj.ComponentType.ToUpper() == TemplateComponentTypeModel.BODY.ToUpper())
-                    {
-                        var component = new SendMessageTemplateModel.Template.Component
-                        {
-                            type = "BODY"
-                        };
-
-                        foreach (var value in obj.Values.OrderBy(x => x.Index))
-                        {
-                            component.parameters.Add(new
-                            {
-                                type = TemplateHeaderFormatTypeModel.TEXT.ToLower(),
-                                text = value.Value ?? ""
-                            });
-                        }
-
-                        template.template.components.Add(component);
-                    }
-                    else if (obj.ComponentType.ToUpper() == TemplateComponentTypeModel.BUTTONS.ToUpper()
-                        || obj.ComponentType.ToUpper() == TemplateComponentTypeModel.BUTTON.ToUpper())
-                    {
-                        foreach (var value in obj.Values.OrderBy(x => x.Index))
-                        {
-                            //For Button we pass as index
-                            var component = new SendMessageTemplateModel.Template.Component
-                            {
-                                type = "BUTTON",
-                                sub_type = value.Type,
-                                index = value.Index
-                            };
-
-                            var valueType = value.Type.ToUpper();
-                            switch (valueType)
-                            {
-                                case TemplateButtonTypeModel.QUICK_REPLY:
-                                    component.parameters.Add(new
-                                    {
-                                        //type = TemplateButtonTypeModel.QUICK_REPLY.ToLower(),
-                                        type = "text",
-                                        text = value.Value ?? ""
-                                    });
-                                    break;
-                                case TemplateButtonTypeModel.PHONE_NUMBER:
-                                    component.parameters.Add(new
-                                    {
-                                        type = "text",
-                                        //index = value.Index,
-                                        text = value.Value ?? ""
-                                    });
-                                    break;
-                                case TemplateButtonTypeModel.URL:
-                                    component.parameters.Add(new
-                                    {
-                                        type = "text",
-                                        //index = value.Index,
-                                        text = value.Value ?? ""
-                                    });
-                                    break;
-
-                                default:
-                                    break;
-                            }
-
-                            template.template.components.Add(component);
-                        }
-                    }
-                }
-
-                requestStr = JsonConvert.SerializeObject(template);
-
-                // Send the batch request
-                var resp = await _httpClient.PostAsync($"{model.PhoneId}/messages", new StringContent(requestStr, null, "application/json"));
-                responseStr = await resp.Content.ReadAsStringAsync();
-
-                _logger.LogInformation("Received Response in function HandleSendTemplateMessage with received object {object} and requestStr {requestStr} and responseStr {responseStr}", JsonConvert.SerializeObject(model), requestStr, responseStr);
-
-                var response = JsonConvert.DeserializeObject<BatchMessageResponseModel.BodyResponse>(responseStr);
-                if (response.error != null)
-                {
-                    var responseDto = new SendMessageResponseDto
-                    {
-                        PhoneNumber = model.PhoneNumber,
-                        WAId = String.Empty,
-                        Status = response.error.code,
-                        MessageId = String.Empty,
-                        Errors = new List<string> {
-                            response.error.message
-                        }
-                    };
-
-                    return responseDto;
-                }
-                else
-                {
-                    var responseDto = new SendMessageResponseDto
-                    {
-                        PhoneNumber = response.contacts[0].input,
-                        WAId = response.contacts[0].wa_id,
-                        Status = 200,
-                        MessageId = response.messages[0].id
-                    };
-
-                    return responseDto;
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError("Exception occurred {exception} when executing function HandleSendTemplateMessage with received object {object}", ex, JsonConvert.SerializeObject(model));
-            }
-
-            return null;
         }
 
         #endregion

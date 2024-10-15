@@ -27,10 +27,10 @@ namespace WhatsAppBridge.Controllers
         }
 
 
-        [HttpPost("SendMessage")]
-        public async Task<IActionResult> SendMessage([FromBody] SendMessageRequestDto model)
+        [HttpPost("SendBatchMessage")]
+        public async Task<IActionResult> SendBatchMessage([FromBody] SendMessageRequestDto model)
         {
-            _logger.LogInformation("Facebook webhook received with data={data}", JsonConvert.SerializeObject(model));
+            _logger.LogInformation("Received SendBatchMessage request with data={data}", JsonConvert.SerializeObject(model));
 
             if (model == null)
             {
@@ -77,7 +77,7 @@ namespace WhatsAppBridge.Controllers
                 });
             }
 
-            var response = await _whatsAppHandler.HandleSendMessage(model);
+            var response = await _whatsAppHandler.HandleSendBatchMessage(model);
             if (response == null || response.Count == 0)
             {
                 return Ok(new ApiResult

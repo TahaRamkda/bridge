@@ -4,10 +4,12 @@
     {
         public SendMessageTemplateRequestDto()
         {
+            PhoneNumbers = new List<string>();
         }
 
         public string PhoneId { get; set; }
-        public string PhoneNumber { get; set; }
+
+        public List<string> PhoneNumbers { get; set; }
         public string LanguageCode { get; set; }
         public string TemplateId { get; set; }
         public string TemplateName { get; set; }

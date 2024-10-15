@@ -45,6 +45,15 @@ namespace WhatsAppBridge.Controllers
         {
             _logger.LogInformation("Calling api GetTemplatebyId with templateId={templateId}", messageTemplateId);
 
+            if (String.IsNullOrWhiteSpace(messageTemplateId))
+            {
+                return Ok(new ApiResult
+                {
+                    StatusCode = 400,
+                    Message = "Please enter message template id"
+                });
+            }
+
             var fullUrl = CommonHelper.GetFullUrl(baseUrl, $"/{messageTemplateId}");
 
             _logger.LogInformation("Calling WhatsApp GetTemplateById method with templateId {templateId } with url {url}", messageTemplateId, fullUrl);
@@ -71,6 +80,15 @@ namespace WhatsAppBridge.Controllers
         {
             _logger.LogInformation("Calling api SyncTemplatebyId with templateId={templateId}", messageTemplateId);
 
+            if (String.IsNullOrWhiteSpace(messageTemplateId))
+            {
+                return Ok(new ApiResult
+                {
+                    StatusCode = 400,
+                    Message = "Please enter message template id"
+                });
+            }
+
             var fullUrl = CommonHelper.GetFullUrl(baseUrl, $"/{messageTemplateId}");
 
             _logger.LogInformation("Calling WhatsApp SyncTemplatebyId method with templateId {templateId } with url {url}", messageTemplateId, fullUrl);
@@ -91,28 +109,70 @@ namespace WhatsAppBridge.Controllers
             });
         }
 
-        [HttpPost("SendTemplateMessage")]
-        public async Task<IActionResult> SendTemplateMessage(SendMessageTemplateRequestDto data)
+        [HttpPost("SendBatchTemplateMessage")]
+        public async Task<IActionResult> SendBatchTemplateMessage(SendMessageTemplateRequestDto model)
         {
-            _logger.LogInformation("Received SendTemplateMessage request with data={data}", JsonConvert.SerializeObject(data));
+            _logger.LogInformation("Received SendBatchTemplateMessage request with data={data}", JsonConvert.SerializeObject(model));
 
-            if (data == null)
-                return BadRequest("Cannot parse received data object");
+            if (model == null)
+            {
+                return BadRequest(new ApiResult
+                {
+                    Message = "Bad Request",
+                    StatusCode = StatusCodes.Status400BadRequest
+                });
+            }
 
-            var response = await _whatsAppHandler.HandleSendTemplateMessage(data);
+            if (String.IsNullOrWhiteSpace(model.PhoneId))
+            {
+                return BadRequest(new ApiResult
+                {
+                    Message = "Message shouldn't be empty",
+                    StatusCode = StatusCodes.Status400BadRequest
+                });
+            }
 
-            if (response == null)
+            if (String.IsNullOrWhiteSpace(model.LanguageCode))
+            {
+                return BadRequest(new ApiResult
+                {
+                    Message = "Language code shouldn't be empty",
+                    StatusCode = StatusCodes.Status400BadRequest
+                });
+            }
+
+            if (String.IsNullOrWhiteSpace(model.TemplateId))
+            {
+                return BadRequest(new ApiResult
+                {
+                    Message = "Template id shouldn't be empty",
+                    StatusCode = StatusCodes.Status400BadRequest
+                });
+            }
+
+            if (String.IsNullOrWhiteSpace(model.TemplateName))
+            {
+                return BadRequest(new ApiResult
+                {
+                    Message = "Template name shouldn't be empty",
+                    StatusCode = StatusCodes.Status400BadRequest
+                });
+            }
+
+            var response = await _whatsAppHandler.HandleSendBatchTemplateMessage(model);
+            if (response == null || response.Count == 0)
             {
                 return Ok(new ApiResult
                 {
-                    StatusCode = 400,
-                    Result = "Something went wrong while sending message"
+                    StatusCode = StatusCodes.Status500InternalServerError,
+                    Message = "Something went wrong"
                 });
             }
 
             return Ok(new ApiResult
             {
-                Success = response.Status == 200,
+                StatusCode = 200,
+                Message = "Template sent successfully",
                 Result = response
             });
         }

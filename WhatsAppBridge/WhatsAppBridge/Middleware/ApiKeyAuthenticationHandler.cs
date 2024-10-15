@@ -9,6 +9,7 @@ namespace WhatsAppBridge.Middleware
     public class ApiKeyAuthenticationHandler : AuthenticationHandler<AuthenticationSchemeOptions>
     {
         public const string ApiKeyHeaderName = "X-API-KEY";
+        private bool Authenticate = false; // Hardcoded or fetched from config.
         private string ApiKey = String.Empty; // Hardcoded or fetched from config.
 
         public ApiKeyAuthenticationHandler(
@@ -19,18 +20,22 @@ namespace WhatsAppBridge.Middleware
             ISystemClock clock) : base(options, logger, encoder, clock)
         {
             ApiKey = authenticationConfigurationSettings.Value.ApiKey;
+            Authenticate = authenticationConfigurationSettings.Value.Authenticate;
         }
 
         protected override Task<AuthenticateResult> HandleAuthenticateAsync()
         {
-            if (!Request.Headers.TryGetValue(ApiKeyHeaderName, out var extractedApiKey))
+            if (Authenticate)
             {
-                return Task.FromResult(AuthenticateResult.Fail("API Key was not provided."));
-            }
+                if (!Request.Headers.TryGetValue(ApiKeyHeaderName, out var extractedApiKey))
+                {
+                    return Task.FromResult(AuthenticateResult.Fail("API Key was not provided."));
+                }
 
-            if (!ApiKey.Equals(extractedApiKey))
-            {
-                return Task.FromResult(AuthenticateResult.Fail("Invalid API Key provided."));
+                if (!ApiKey.Equals(extractedApiKey))
+                {
+                    return Task.FromResult(AuthenticateResult.Fail("Invalid API Key provided."));
+                }
             }
 
             var claims = new[] { new Claim(ClaimTypes.Name, "ApiKeyUser") };
