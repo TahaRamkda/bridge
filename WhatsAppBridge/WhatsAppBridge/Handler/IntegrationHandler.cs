@@ -75,7 +75,7 @@ namespace WhatsAppBridge.Handler
                         {
                             templateDto.Header.Text = component.text;
 
-                            if (component.example != null && component.example.handle != null)
+                            if (component.example != null && component.example.header_handle != null)
                             {
                                 List<string> examples = JsonConvert.DeserializeObject<List<string>>(JsonConvert.SerializeObject(component.example.header_handle));
                                 for (int i = 0; i < examples.Count; i++)
@@ -86,13 +86,13 @@ namespace WhatsAppBridge.Handler
                                         value = examples[i]
                                     });
                                 }
-                            }
+                            } 
                         }
                         else if (templateDto.Header.Format == TemplateHeaderFormatTypeModel.DOCUMENT)
                         {
                             templateDto.Header.Text = component.text;
 
-                            if (component.example.header_handle != null)
+                            if (component.example != null && component.example.header_handle != null)
                             {
                                 List<string> examples = JsonConvert.DeserializeObject<List<string>>(JsonConvert.SerializeObject(component.example.header_handle));
                                 for (int i = 0; i < examples.Count; i++)

@@ -43,11 +43,11 @@ namespace WhatsAppBridge
 
             builder.Services.AddHttpClient(HttpClientType.integration_api, (serviceProvider, httpClient) =>
             {
-                var whatsAppConfiguration = serviceProvider.GetRequiredService<IOptions<IntegrationConfigurationSettings>>().Value;
+                var integrationConfiguration = serviceProvider.GetRequiredService<IOptions<IntegrationConfigurationSettings>>().Value;
 
-                //httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {whatsAppConfiguration.AccessToken}");
-                httpClient.BaseAddress = new Uri(whatsAppConfiguration.BaseURL);
-                httpClient.Timeout = TimeSpan.FromSeconds(whatsAppConfiguration.TimeOutInSeconds);
+                httpClient.DefaultRequestHeaders.Add("X-API-KEY", $"Bearer {integrationConfiguration.ApiKey}");
+                httpClient.BaseAddress = new Uri(integrationConfiguration.BaseURL);
+                httpClient.Timeout = TimeSpan.FromSeconds(integrationConfiguration.TimeOutInSeconds);
             });
 
             builder.Services.AddScoped<WhatsAppWebhookHandler>();

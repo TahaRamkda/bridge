@@ -69,8 +69,8 @@ namespace WhatsAppBridge.Controllers
 
             return Ok(new ApiResult
             {
-                StatusCode = 200,
                 Success = true,
+                StatusCode = 200,
                 Result = templateDto
             });
         }
@@ -104,8 +104,8 @@ namespace WhatsAppBridge.Controllers
 
             return Ok(new ApiResult
             {
-                StatusCode = 200,
-                Success = templateDto != null
+                Success = templateDto != null,
+                StatusCode = 200
             });
         }
 
@@ -171,6 +171,7 @@ namespace WhatsAppBridge.Controllers
 
             return Ok(new ApiResult
             {
+                Success = true,
                 StatusCode = 200,
                 Message = "Template sent successfully",
                 Result = response

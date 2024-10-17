@@ -49,11 +49,11 @@ namespace WhatsAppBridge.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Post(string client_Id, object payload)
+        public async Task<IActionResult> Post(string clientId, object payload)
         {
             var data = System.Text.Json.JsonSerializer.Serialize(payload);
 
-            _logger.LogInformation("Facebook webhook received with data={data}", data);
+            _logger.LogInformation("Facebook webhook received with clientId={clientId} and data={data}", clientId, data);
 
             var model = JsonConvert.DeserializeObject<WhatsAppWebhookModel>(data);
             if (model == null)

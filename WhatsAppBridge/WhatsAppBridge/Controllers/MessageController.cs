@@ -89,6 +89,7 @@ namespace WhatsAppBridge.Controllers
 
             return Ok(new ApiResult
             {
+                Success = true,
                 StatusCode = 200,
                 Message = "Message sent successfully",
                 Result = response

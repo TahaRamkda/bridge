@@ -7,6 +7,7 @@
             Errors = new List<string>();
         }
 
+        public bool Success { get; set; }
         public int Status { get; set; }
         public string PhoneNumber { get; set; }
         public string WAId { get; set; }

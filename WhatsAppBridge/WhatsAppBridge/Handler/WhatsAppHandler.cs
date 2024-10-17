@@ -133,8 +133,10 @@ namespace WhatsAppBridge.Handler
                                     image = new
                                     {
                                         id = value.Value ?? ""
+                                        //link = value.Value ?? ""
                                     }
                                 });
+
                                 break;
                             case TemplateHeaderFormatTypeModel.DOCUMENT:
                                 component.parameters.Add(new
@@ -143,6 +145,7 @@ namespace WhatsAppBridge.Handler
                                     document = new
                                     {
                                         id = value.Value ?? ""
+                                        //link = value.Value
                                     }
                                 });
                                 break;
@@ -153,6 +156,7 @@ namespace WhatsAppBridge.Handler
                                     video = new
                                     {
                                         id = value.Value ?? ""
+                                        //link = value.Value
                                     }
                                 });
                                 break;
@@ -234,6 +238,128 @@ namespace WhatsAppBridge.Handler
             return template;
         }
 
+        private async Task<UploadMediaResultDto> UploadMedia(string phoneId, UploadMediaDto.MediaDto item)
+        {
+            _logger.LogInformation("Processing file in function HandleMediaUpload with item {item}", JsonConvert.SerializeObject(item));
+
+            //MediaPath
+            var mediaDirectory = String.Concat(_webHostEnvironment.ContentRootPath, "Media");
+            if (!Directory.Exists(mediaDirectory))
+                Directory.CreateDirectory(mediaDirectory);
+
+            string filepath = String.Empty;
+            string responseStr = String.Empty;
+            UploadMediaResultDto result = new UploadMediaResultDto
+            {
+                Id = item.Id
+            };
+
+            try
+            {
+                if (String.IsNullOrWhiteSpace(item.Url))
+                {
+                    _logger.LogError("Error in processing file in function HandleMediaUpload with item {item}, item does not have URL", JsonConvert.SerializeObject(item));
+                    //results.Add(result);
+                    //continue;
+                }
+
+                HttpResponseMessage headResponses = await _httpClient.GetAsync(item.Url);
+                if (!headResponses.IsSuccessStatusCode)
+                {
+                    _logger.LogError("Error in processing file in function HandleMediaUpload with item {item}, cannot fetch file from origin server", JsonConvert.SerializeObject(item));
+                    //results.Add(result);
+                    //continue;
+                    return result;
+                }
+
+                if (!headResponses.Content.Headers.ContentLength.HasValue)
+                {
+                    _logger.LogError("Error in processing file in function HandleMediaUpload with item {item}, cannot fetch file from origin server", JsonConvert.SerializeObject(item));
+                    //results.Add(result);
+                    //continue;
+
+                    return result;
+                }
+
+                // Create a Uri object
+                Uri uri = new Uri(item.Url);
+
+                //string filename = item.Url.Substring(item.Url.LastIndexOf('/') + 1);
+
+                // Get the file name from the Uri
+                string filename = Path.GetFileName(uri.LocalPath);
+
+                filepath = Path.Combine(mediaDirectory, filename);
+
+                await using var savefileStream = new FileStream(filepath, FileMode.Create, FileAccess.Write);
+                await headResponses.Content.CopyToAsync(savefileStream);
+
+                savefileStream.Close();
+                savefileStream.Dispose();
+
+                var request = new HttpRequestMessage(HttpMethod.Post, $"{phoneId}/media");
+
+                // Prepare file content
+                using (var content = new MultipartFormDataContent())
+                {
+                    var fileInfo = new FileInfo(filepath);
+
+                    string contentType = String.Empty;
+                    new FileExtensionContentTypeProvider().TryGetContentType(fileInfo.FullName, out contentType);
+
+                    // Read the file from the local path
+                    var fileStream = new FileStream(filepath, FileMode.Open, FileAccess.Read);
+                    var fileContent = new StreamContent(fileStream);
+                    fileContent.Headers.ContentType = new MediaTypeHeaderValue(contentType);
+
+                    //fileContent.Headers.ContentType = new MediaTypeHeaderValue($"image/{fileType}");
+
+                    // Add file content to the form-data
+                    content.Add(fileContent, "file", Path.GetFileName(filepath));
+
+                    // Add other form data parameters
+                    content.Add(new StringContent("whatsapp"), "messaging_product");
+
+                    // Add form data type
+                    content.Add(new StringContent(contentType), "type");
+
+                    // Assign content to the request
+                    request.Content = content;
+
+                    // Send the request and get the response
+                    var response = await _httpClient.SendAsync(request);
+
+                    // Read the response content
+                    responseStr = await response.Content.ReadAsStringAsync();
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var fileJsonResponse = JObject.Parse(responseStr);
+                        var fileResponse = fileJsonResponse["id"]?.ToString();
+                        result.MediaId = fileResponse;
+
+                        //results.Add(result);
+                        return result;
+                    }
+                    else
+                    {
+                        _logger.LogError("Error in processing file in function HandleMediaUpload with item {item}, cannot upload file with response {response}", JsonConvert.SerializeObject(item), responseStr);
+                        throw new BadHttpRequestException(responseStr);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Exception occurred {exception} when executing function HandleMediaUpload with item {item} and response {responseStr }", ex, JsonConvert.SerializeObject(item), responseStr);
+                //results.Add(result);
+                return result;
+            }
+            finally //Delete the media 
+            {
+                if (File.Exists(filepath))
+                    File.Delete(filepath);
+            }
+        }
+
         #endregion
 
         #region Methods
@@ -298,6 +424,7 @@ namespace WhatsAppBridge.Handler
                             {
                                 var responseDto = new SendMessageResponseDto
                                 {
+                                    Success = true,
                                     PhoneNumber = batch[j],
                                     WAId = response.bodyResponse.contacts[0].wa_id,
                                     Status = response.code,
@@ -310,6 +437,7 @@ namespace WhatsAppBridge.Handler
                             {
                                 var responseDto = new SendMessageResponseDto
                                 {
+                                    Success = false,
                                     PhoneNumber = batch[j],
                                     WAId = String.Empty,
                                     Status = response.bodyResponse.error.code,
@@ -381,7 +509,7 @@ namespace WhatsAppBridge.Handler
 
                         _logger.LogInformation("Created Batch Request in function HandleSendBatchTemplateMessage with received object {object} with batch size {batchSize} and totalbatchCount {totalbatchCount} and batchIndex {batchIndex} and batchRequest {batchRequest}", JsonConvert.SerializeObject(model), batchSize, batches.Count, (i + 1), requestStr);
 
-                        // Send the batch request
+                        // Send the batch request   
                         var resp = await _httpClient.PostAsync("", new StringContent(requestStr, null, "application/json"));
                         responseStr = await resp.Content.ReadAsStringAsync();
 
@@ -397,6 +525,7 @@ namespace WhatsAppBridge.Handler
                             {
                                 var responseDto = new SendMessageResponseDto
                                 {
+                                    Success = true,
                                     PhoneNumber = batch[j],
                                     WAId = response.bodyResponse.contacts[0].wa_id,
                                     Status = response.code,
@@ -409,6 +538,7 @@ namespace WhatsAppBridge.Handler
                             {
                                 var responseDto = new SendMessageResponseDto
                                 {
+                                    Success = false,
                                     PhoneNumber = batch[j],
                                     WAId = String.Empty,
                                     Status = response.bodyResponse.error.code,
@@ -425,7 +555,6 @@ namespace WhatsAppBridge.Handler
                     catch (Exception ex)
                     {
                         _logger.LogError("Exception occurred {exception} when executing function HandleSendBatchTemplateMessage with received object {object} with batch size {batchSize} and batchCount {batchCount} and batchIndex {batchIndex} and batchRequest {batchRequest} and batchResponse {batchResponse}", ex, JsonConvert.SerializeObject(model), batchSize, batches.Count, i, requestStr, responseStr);
-
                     }
                 }
             }
@@ -449,115 +578,11 @@ namespace WhatsAppBridge.Handler
         {
             _logger.LogInformation("Calling function HandleMediaUpload with received payload {payload}", JsonConvert.SerializeObject(model));
 
-            //MediaPath
-            var mediaDirectory = String.Concat(_webHostEnvironment.ContentRootPath, "Media");
-            if (!Directory.Exists(mediaDirectory))
-                Directory.CreateDirectory(mediaDirectory);
-
             List<UploadMediaResultDto> results = new List<UploadMediaResultDto>();
             foreach (var item in model.Medias)
             {
-                _logger.LogInformation("Processing file in function HandleMediaUpload with item {item}", JsonConvert.SerializeObject(item));
-
-                string filepath = String.Empty;
-                string responseStr = String.Empty;
-                UploadMediaResultDto result = new UploadMediaResultDto
-                {
-                    Id = item.Id
-                };
-
-                try
-                {
-                    if (String.IsNullOrWhiteSpace(item.Url))
-                    {
-                        _logger.LogError("Error in processing file in function HandleMediaUpload with item {item}, item does not have URL", JsonConvert.SerializeObject(item));
-                        results.Add(result);
-                        continue;
-                    }
-
-                    HttpResponseMessage headResponses = await _httpClient.GetAsync(item.Url);
-                    if (!headResponses.IsSuccessStatusCode)
-                    {
-                        _logger.LogError("Error in processing file in function HandleMediaUpload with item {item}, cannot fetch file from origin server", JsonConvert.SerializeObject(item));
-                        results.Add(result);
-                        continue;
-                    }
-
-                    if (!headResponses.Content.Headers.ContentLength.HasValue)
-                    {
-                        _logger.LogError("Error in processing file in function HandleMediaUpload with item {item}, cannot fetch file from origin server", JsonConvert.SerializeObject(item));
-                        results.Add(result);
-                        continue;
-                    }
-
-                    string filename = item.Url.Substring(item.Url.LastIndexOf('/') + 1);
-                    filepath = Path.Combine(mediaDirectory, filename);
-
-                    await using var savefileStream = new FileStream(filepath, FileMode.Create, FileAccess.Write);
-                    await headResponses.Content.CopyToAsync(savefileStream);
-
-                    savefileStream.Close();
-                    savefileStream.Dispose();
-
-                    var request = new HttpRequestMessage(HttpMethod.Post, $"{model.PhoneId}/media");
-
-                    // Prepare file content
-                    using (var content = new MultipartFormDataContent())
-                    {
-                        var fileInfo = new FileInfo(filepath);
-
-                        string contentType = String.Empty;
-                        new FileExtensionContentTypeProvider().TryGetContentType(fileInfo.FullName, out contentType);
-
-                        // Read the file from the local path
-                        var fileStream = new FileStream(filepath, FileMode.Open, FileAccess.Read);
-                        var fileContent = new StreamContent(fileStream);
-                        fileContent.Headers.ContentType = new MediaTypeHeaderValue(contentType);
-
-                        //fileContent.Headers.ContentType = new MediaTypeHeaderValue($"image/{fileType}");
-
-                        // Add file content to the form-data
-                        content.Add(fileContent, "file", Path.GetFileName(filepath));
-
-                        // Add other form data parameters
-                        content.Add(new StringContent("whatsapp"), "messaging_product");
-
-                        // Add form data type
-                        content.Add(new StringContent(contentType), "type");
-
-                        // Assign content to the request
-                        request.Content = content;
-
-                        // Send the request and get the response
-                        var response = await _httpClient.SendAsync(request);
-
-                        // Read the response content
-                        responseStr = await response.Content.ReadAsStringAsync();
-                        if (response.IsSuccessStatusCode)
-                        {
-                            var fileJsonResponse = JObject.Parse(responseStr);
-                            var fileResponse = fileJsonResponse["id"]?.ToString();
-                            result.MediaId = fileResponse;
-
-                            results.Add(result);
-                        }
-                        else
-                        {
-                            _logger.LogError("Error in processing file in function HandleMediaUpload with item {item}, cannot upload file with response {response}", JsonConvert.SerializeObject(item), responseStr);
-                            throw new BadHttpRequestException(responseStr);
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError("Exception occurred {exception} when executing function HandleMediaUpload with item {item} and response {responseStr }", ex, JsonConvert.SerializeObject(item), responseStr);
-                    results.Add(result);
-                }
-                finally //Delete the media 
-                {
-                    if (File.Exists(filepath))
-                        File.Delete(filepath);
-                }
+                var media = await UploadMedia(model.PhoneId, item);
+                results.Add(media);
             }
 
             return results;
