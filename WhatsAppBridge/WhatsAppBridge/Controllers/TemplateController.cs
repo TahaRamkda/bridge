@@ -41,23 +41,33 @@ namespace WhatsAppBridge.Controllers
         }
 
         [HttpGet("GetTemplatebyId")]
-        public async Task<IActionResult> GetTemplatebyId(string messageTemplateId)
+        public async Task<IActionResult> GetTemplatebyId(string clientId, string messageTemplateId)
         {
             _logger.LogInformation("Calling api GetTemplatebyId with templateId={templateId}", messageTemplateId);
+
+            if (String.IsNullOrWhiteSpace(clientId))
+            {
+                return BadRequest(new ApiResult
+                {
+                    Message = "Client id shouldn't be empty",
+                    StatusCode = StatusCodes.Status400BadRequest
+                });
+            }
 
             if (String.IsNullOrWhiteSpace(messageTemplateId))
             {
                 return Ok(new ApiResult
                 {
                     StatusCode = 400,
-                    Message = "Please enter message template id"
+                    Message = "Message template id shouldn't be empty"
                 });
             }
 
             var fullUrl = CommonHelper.GetFullUrl(baseUrl, $"/{messageTemplateId}");
-
             _logger.LogInformation("Calling WhatsApp GetTemplateById method with templateId {templateId } with url {url}", messageTemplateId, fullUrl);
 
+            var accessToken = await _integrationHandler.GetAccessTokenByClientId(clientId);
+            _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {accessToken}");
             var response = await _httpClient.GetAsync($"/{messageTemplateId}");
             var content = await response.Content.ReadAsStringAsync();
 
@@ -76,16 +86,25 @@ namespace WhatsAppBridge.Controllers
         }
 
         [HttpGet("SyncTemplatebyId")]
-        public async Task<IActionResult> SyncTemplatebyId(string messageTemplateId)
+        public async Task<IActionResult> SyncTemplatebyId(string clientId, string messageTemplateId)
         {
             _logger.LogInformation("Calling api SyncTemplatebyId with templateId={templateId}", messageTemplateId);
+
+            if (String.IsNullOrWhiteSpace(clientId))
+            {
+                return BadRequest(new ApiResult
+                {
+                    Message = "Client id shouldn't be empty",
+                    StatusCode = StatusCodes.Status400BadRequest
+                });
+            }
 
             if (String.IsNullOrWhiteSpace(messageTemplateId))
             {
                 return Ok(new ApiResult
                 {
                     StatusCode = 400,
-                    Message = "Please enter message template id"
+                    Message = "Message template id shouldn't be empty"
                 });
             }
 
@@ -93,6 +112,8 @@ namespace WhatsAppBridge.Controllers
 
             _logger.LogInformation("Calling WhatsApp SyncTemplatebyId method with templateId {templateId } with url {url}", messageTemplateId, fullUrl);
 
+            var accessToken = await _integrationHandler.GetAccessTokenByClientId(clientId);
+            _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {accessToken}");
             var response = await _httpClient.GetAsync($"/{messageTemplateId}");
             var content = await response.Content.ReadAsStringAsync();
 
@@ -123,11 +144,20 @@ namespace WhatsAppBridge.Controllers
                 });
             }
 
+            if (String.IsNullOrWhiteSpace(model.ClientId))
+            {
+                return BadRequest(new ApiResult
+                {
+                    Message = "Client Id shouldn't be empty",
+                    StatusCode = StatusCodes.Status400BadRequest
+                });
+            }
+
             if (String.IsNullOrWhiteSpace(model.PhoneId))
             {
                 return BadRequest(new ApiResult
                 {
-                    Message = "Message shouldn't be empty",
+                    Message = "Phone Id shouldn't be empty",
                     StatusCode = StatusCodes.Status400BadRequest
                 });
             }

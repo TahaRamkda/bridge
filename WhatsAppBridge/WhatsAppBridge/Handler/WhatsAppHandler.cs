@@ -127,38 +127,79 @@ namespace WhatsAppBridge.Handler
                                 });
                                 break;
                             case TemplateHeaderFormatTypeModel.IMAGE:
-                                component.parameters.Add(new
+                                if (CommonHelper.IsValidUrl(value.Value))
                                 {
-                                    type = TemplateHeaderFormatTypeModel.IMAGE.ToLower(),
-                                    image = new
+                                    component.parameters.Add(new
                                     {
-                                        id = value.Value ?? ""
-                                        //link = value.Value ?? ""
-                                    }
-                                });
+                                        type = TemplateHeaderFormatTypeModel.IMAGE.ToLower(),
+                                        image = new
+                                        {
+                                            link = value.Value ?? ""
+                                        }
+                                    });
+                                }
+                                else
+                                {
+                                    component.parameters.Add(new
+                                    {
+                                        type = TemplateHeaderFormatTypeModel.IMAGE.ToLower(),
+                                        image = new
+                                        {
+                                            id = value.Value ?? ""
+                                            //link = value.Value ?? ""
+                                        }
+                                    });
+                                }
 
                                 break;
                             case TemplateHeaderFormatTypeModel.DOCUMENT:
-                                component.parameters.Add(new
+                                if (CommonHelper.IsValidUrl(value.Value))
                                 {
-                                    type = TemplateHeaderFormatTypeModel.DOCUMENT.ToLower(),
-                                    document = new
+                                    component.parameters.Add(new
                                     {
-                                        id = value.Value ?? ""
-                                        //link = value.Value
-                                    }
-                                });
+                                        type = TemplateHeaderFormatTypeModel.DOCUMENT.ToLower(),
+                                        document = new
+                                        {
+                                            link = value.Value ?? ""
+                                        }
+                                    });
+                                }
+                                else
+                                {
+                                    component.parameters.Add(new
+                                    {
+                                        type = TemplateHeaderFormatTypeModel.DOCUMENT.ToLower(),
+                                        document = new
+                                        {
+                                            id = value.Value ?? ""
+                                        }
+                                    });
+                                }
+
                                 break;
                             case TemplateHeaderFormatTypeModel.VIDEO:
-                                component.parameters.Add(new
+                                if (CommonHelper.IsValidUrl(value.Value))
                                 {
-                                    type = TemplateHeaderFormatTypeModel.VIDEO.ToLower(),
-                                    video = new
+                                    component.parameters.Add(new
                                     {
-                                        id = value.Value ?? ""
-                                        //link = value.Value
-                                    }
-                                });
+                                        type = TemplateHeaderFormatTypeModel.VIDEO.ToLower(),
+                                        video = new
+                                        {
+                                            link = value.Value
+                                        }
+                                    });
+                                }
+                                else
+                                {
+                                    component.parameters.Add(new
+                                    {
+                                        type = TemplateHeaderFormatTypeModel.VIDEO.ToLower(),
+                                        video = new
+                                        {
+                                            id = value.Value ?? ""
+                                        }
+                                    });
+                                }
                                 break;
                             default:
                                 break;
@@ -384,8 +425,10 @@ namespace WhatsAppBridge.Handler
 
                 _logger.LogInformation("Calling function HandleSendBatchMessage with received object {object} with batch size {batchSize} and totalbatchCount {totalbatchCount}", JsonConvert.SerializeObject(model), batchSize, batches.Count);
 
-                dynamic messageContent = GetMessageContent(model);
+                var accessToken = await _integrationHandler.GetAccessTokenByClientId(model.ClientId);
+                _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {accessToken}");
 
+                dynamic messageContent = GetMessageContent(model);
                 for (int i = 0; i < batches.Count; i++)
                 {
                     string requestStr = String.Empty;
@@ -487,6 +530,9 @@ namespace WhatsAppBridge.Handler
 
                 var template = GetTemplateContent(model);
 
+                var accessToken = await _integrationHandler.GetAccessTokenByClientId(model.ClientId);
+                _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {accessToken}");
+
                 for (int i = 0; i < batches.Count; i++)
                 {
                     string requestStr = String.Empty;
@@ -577,6 +623,9 @@ namespace WhatsAppBridge.Handler
         public async Task<List<UploadMediaResultDto>> HandleMediaUpload(UploadMediaDto model)
         {
             _logger.LogInformation("Calling function HandleMediaUpload with received payload {payload}", JsonConvert.SerializeObject(model));
+
+            var accessToken = await _integrationHandler.GetAccessTokenByClientId(model.ClientId);
+            _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {accessToken}");
 
             List<UploadMediaResultDto> results = new List<UploadMediaResultDto>();
             foreach (var item in model.Medias)

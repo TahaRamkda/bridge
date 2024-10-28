@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using Serilog.Events;
 using WhatsAppBridge.Helpers;
 using WhatsAppBridge.Models;
 using WhatsAppBridge.Models.Integration;
@@ -11,10 +12,16 @@ namespace WhatsAppBridge.Handler
 {
     public partial class IntegrationHandler
     {
+        #region Fields
+
         private readonly ILogger<IntegrationHandler> _logger;
         private readonly IOptions<IntegrationConfigurationSettings> _integrationConfigurationSettings;
         private readonly HttpClient _httpClient;
         private readonly string baseUrl = String.Empty;
+
+        #endregion
+
+        #region Ctor
 
         public IntegrationHandler(ILogger<IntegrationHandler> logger,
           IOptions<IntegrationConfigurationSettings> integrationConfigurationSettings,
@@ -24,6 +31,86 @@ namespace WhatsAppBridge.Handler
             _integrationConfigurationSettings = integrationConfigurationSettings;
             _httpClient = httpClientFactory.CreateClient(HttpClientType.integration_api);
             baseUrl = _httpClient.BaseAddress.AbsoluteUri;
+        }
+
+        #endregion
+
+        #region Methods
+
+        public async Task<string> GetAccessTokenByClientId(string clientId)
+        {
+            string requestStr = String.Empty;
+            string fullUrl = String.Empty;
+            string responseStr = String.Empty;
+
+            try
+            {
+                _logger.LogInformation("Calling function GetAccessTokenByClientId with clientId {clientId}", clientId);
+
+                _logger.LogInformation("Executing function GetAccessTokenByClientId Calling Integration GetClientAccessToken method with clientId {clientId}", clientId);
+
+                requestStr = clientId;
+                fullUrl = CommonHelper.GetFullUrl(baseUrl, $"/clients/getclientaccesstoken?client_Id={clientId}");
+
+                var response = await _httpClient.GetAsync($"/clients/getclientaccesstoken?client_Id={clientId}");
+                responseStr = await response.Content.ReadAsStringAsync();
+
+                _logger.LogInformation("Received response when executing function GetAccessTokenByClientId of Integration GetClientAccessToken method with clientId {clientId} with url {url} and request {request} and content {content}", clientId, fullUrl, requestStr, responseStr);
+
+                var result = JsonConvert.DeserializeObject<ApiResult>(responseStr);
+                if (result != null && result.Success)
+                    return (string)result.Result;
+
+                _logger.LogInformation("Received response when executing function GetAccessTokenByClientId of Integration GetClientAccessToken method with clientId {clientId} with url {url} and request {request} and content {content}", clientId, fullUrl, requestStr, responseStr);
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Exception occurred {exception} when executing function GetAccessTokenByClientId of Integration GetClientAccessToken method with clientId {clientId} with url {url} and request {request} and content {content}", ex, clientId, fullUrl, requestStr, responseStr);
+            }
+
+            return null;
+        }
+
+        public async Task SendMessageStatusUpdate(MessageStatusUpdateDto updateDto)
+        {
+            try
+            {
+                _logger.LogInformation("Calling function SendMessageStatusUpdate with received object {object}", JsonConvert.SerializeObject(updateDto));
+
+                string requestStr = String.Empty;
+                string fullUrl = String.Empty;
+                string responseStr = String.Empty;
+
+                try
+                {
+                    var result = new ApiResult
+                    {
+                        StatusCode = 200,
+                        Success = true,
+                        Result = updateDto
+                    };
+
+                    requestStr = JsonConvert.SerializeObject(result);
+                    fullUrl = CommonHelper.GetFullUrl(baseUrl, $"/message/whatsappmessagestatusupdate");
+
+                    _logger.LogInformation("Executing function SendMessageStatusUpdate Calling Integration whatsappmessagestatusupdate method with clientId {clientId} with url {url} and request {request}", updateDto.client_Id, fullUrl, requestStr);
+
+                    var response = await _httpClient.PostAsync($"/message/whatsappmessagestatusupdate", new StringContent(requestStr, null, "application/json"));
+                    responseStr = await response.Content.ReadAsStringAsync();
+
+                    _logger.LogInformation("Received response when executing function SendMessageStatusUpdate of Integration whatsappmessagestatusupdate method with clientId {clientId} with url {url} and request {request} and content {content}", updateDto.client_Id, fullUrl, requestStr, responseStr);
+
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError("Exception occurred {exception} when executing function SendMessageStatusUpdate of Integration whatsappmessagestatusupdate method with clientId {clientId} with url {url} and request {request} and content {content}", ex, updateDto.client_Id, fullUrl, requestStr, responseStr);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Exception occurred {exception} when executing function SendMessageStatusUpdate with received object {object}", ex, JsonConvert.SerializeObject(updateDto));
+            }
         }
 
         public async Task<MessageTemplateDto> SendMessageTemplateStatusUpdate(MessageTemplateModel messageTemplate, bool sendRequestToIntegration)
@@ -86,7 +173,7 @@ namespace WhatsAppBridge.Handler
                                         value = examples[i]
                                     });
                                 }
-                            } 
+                            }
                         }
                         else if (templateDto.Header.Format == TemplateHeaderFormatTypeModel.DOCUMENT)
                         {
@@ -237,5 +324,7 @@ namespace WhatsAppBridge.Handler
                 return null;
             }
         }
+
+        #endregion
     }
 }

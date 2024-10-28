@@ -39,6 +39,15 @@ namespace WhatsAppBridge.Controllers
                 });
             }
 
+            if (String.IsNullOrWhiteSpace(model.ClientId))
+            {
+                return BadRequest(new ApiResult
+                {
+                    Message = "Client id shouldn't be empty",
+                    StatusCode = StatusCodes.Status400BadRequest
+                });
+            }
+
             if (model.Medias == null || !model.Medias.Any())
             {
                 return BadRequest(new ApiResult

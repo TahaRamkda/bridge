@@ -52,7 +52,6 @@ namespace WhatsAppBridge.Controllers
         public async Task<IActionResult> Post(string clientId, object payload)
         {
             var data = System.Text.Json.JsonSerializer.Serialize(payload);
-
             _logger.LogInformation("Facebook webhook received with clientId={clientId} and data={data}", clientId, data);
 
             var model = JsonConvert.DeserializeObject<WhatsAppWebhookModel>(data);
@@ -69,7 +68,10 @@ namespace WhatsAppBridge.Controllers
                     switch (change.field.ToLower())
                     {
                         case NotificationTypeModel.MessageTemplateStatusUpdate:
-                            await _whatsAppWebhookHandler.HandleMessageTemplateStatusUpdate(change);
+                            await _whatsAppWebhookHandler.HandleMessageTemplateStatusUpdate(clientId, change);
+                            break;
+                        case NotificationTypeModel.MessageUpdate:
+                            await _whatsAppWebhookHandler.HandleMessageStatusUpdate(clientId, change);
                             break;
                         default:
                             continue;

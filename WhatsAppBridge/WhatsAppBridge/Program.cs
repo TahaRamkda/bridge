@@ -36,7 +36,7 @@ namespace WhatsAppBridge
             {
                 var whatsAppConfiguration = serviceProvider.GetRequiredService<IOptions<WhatsAppConfigurationSetting>>().Value;
 
-                httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {whatsAppConfiguration.AccessToken}");
+                //httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {whatsAppConfiguration.AccessToken}");
                 httpClient.BaseAddress = new Uri(whatsAppConfiguration.BaseURL);
                 httpClient.Timeout = TimeSpan.FromSeconds(whatsAppConfiguration.TimeOutInSeconds);
             });

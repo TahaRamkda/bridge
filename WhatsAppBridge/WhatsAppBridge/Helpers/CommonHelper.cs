@@ -55,5 +55,30 @@ namespace WhatsAppBridge.Helpers
             return sb.ToString()
                 .Trim('&');
         }
+
+        public static bool IsValidUrl(string url)
+        {
+            return Uri.TryCreate(url, UriKind.Absolute, out Uri uriResult) && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
+        }
+
+        public static DateTime ConvertFromEpoch(long ticks)
+        {
+            try
+            {
+                DateTime start = new DateTime(1970, 1, 1, 0, 0, 0, 0); //from start epoch time
+                start = start.AddSeconds(ticks); //add the seconds to the start DateTime
+                return start;
+            }
+            catch (Exception ex)
+            {
+                return DateTime.UtcNow;
+            }
+        }
+
+        public static string ConvertDateTimeFormat(DateTime dateTime)
+        {
+            string formattedDateTime = dateTime.ToString("yyyy-MM-ddTHH:mm:ss.fffZ", System.Globalization.CultureInfo.InvariantCulture);
+            return formattedDateTime;
+        }
     }
 }

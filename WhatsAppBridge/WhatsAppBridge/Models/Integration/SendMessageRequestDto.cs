@@ -7,6 +7,7 @@
             PhoneNumbers = new List<string>();
         }
 
+        public string ClientId { get; set; }
         public string PhoneId { get; set; }
         public string Type { get; set; }
         public string Message { get; set; }
