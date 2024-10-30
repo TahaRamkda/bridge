@@ -47,7 +47,7 @@ namespace WhatsAppBridge.Controllers
 
             if (String.IsNullOrWhiteSpace(clientId))
             {
-                return BadRequest(new ApiResult
+                return Ok(new ApiResult
                 {
                     Message = "Client id shouldn't be empty",
                     StatusCode = StatusCodes.Status400BadRequest
@@ -66,8 +66,17 @@ namespace WhatsAppBridge.Controllers
             var fullUrl = CommonHelper.GetFullUrl(baseUrl, $"/{messageTemplateId}");
             _logger.LogInformation("Calling WhatsApp GetTemplateById method with templateId {templateId } with url {url}", messageTemplateId, fullUrl);
 
-            var accessToken = await _integrationHandler.GetAccessTokenByClientId(clientId);
-            _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {accessToken}");
+            var clientInfo = await _integrationHandler.GetClientInformation(clientId);
+            if (clientInfo == null)
+            {
+                return Ok(new ApiResult
+                {
+                    StatusCode = 404,
+                    Message = $"Client not found with clientId: {clientId}"
+                });
+            }
+
+            _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {clientInfo.AccessToken}");
             var response = await _httpClient.GetAsync($"/{messageTemplateId}");
             var content = await response.Content.ReadAsStringAsync();
 
@@ -92,7 +101,7 @@ namespace WhatsAppBridge.Controllers
 
             if (String.IsNullOrWhiteSpace(clientId))
             {
-                return BadRequest(new ApiResult
+                return Ok(new ApiResult
                 {
                     Message = "Client id shouldn't be empty",
                     StatusCode = StatusCodes.Status400BadRequest
@@ -112,8 +121,17 @@ namespace WhatsAppBridge.Controllers
 
             _logger.LogInformation("Calling WhatsApp SyncTemplatebyId method with templateId {templateId } with url {url}", messageTemplateId, fullUrl);
 
-            var accessToken = await _integrationHandler.GetAccessTokenByClientId(clientId);
-            _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {accessToken}");
+            var clientInfo = await _integrationHandler.GetClientInformation(clientId);
+            if (clientInfo == null)
+            {
+                return Ok(new ApiResult
+                {
+                    StatusCode = 404,
+                    Message = $"Client not found with clientId: {clientId}"
+                });
+            }
+
+            _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {clientInfo.AccessToken}");
             var response = await _httpClient.GetAsync($"/{messageTemplateId}");
             var content = await response.Content.ReadAsStringAsync();
 
@@ -137,7 +155,7 @@ namespace WhatsAppBridge.Controllers
 
             if (model == null)
             {
-                return BadRequest(new ApiResult
+                return Ok(new ApiResult
                 {
                     Message = "Bad Request",
                     StatusCode = StatusCodes.Status400BadRequest
@@ -146,25 +164,25 @@ namespace WhatsAppBridge.Controllers
 
             if (String.IsNullOrWhiteSpace(model.ClientId))
             {
-                return BadRequest(new ApiResult
+                return Ok(new ApiResult
                 {
                     Message = "Client Id shouldn't be empty",
                     StatusCode = StatusCodes.Status400BadRequest
                 });
             }
 
-            if (String.IsNullOrWhiteSpace(model.PhoneId))
+            if (String.IsNullOrWhiteSpace(model.SenderNameId))
             {
-                return BadRequest(new ApiResult
+                return Ok(new ApiResult
                 {
-                    Message = "Phone Id shouldn't be empty",
+                    Message = "Sender Name Id shouldn't be empty",
                     StatusCode = StatusCodes.Status400BadRequest
                 });
             }
 
             if (String.IsNullOrWhiteSpace(model.LanguageCode))
             {
-                return BadRequest(new ApiResult
+                return Ok(new ApiResult
                 {
                     Message = "Language code shouldn't be empty",
                     StatusCode = StatusCodes.Status400BadRequest
@@ -173,7 +191,7 @@ namespace WhatsAppBridge.Controllers
 
             if (String.IsNullOrWhiteSpace(model.TemplateId))
             {
-                return BadRequest(new ApiResult
+                return Ok(new ApiResult
                 {
                     Message = "Template id shouldn't be empty",
                     StatusCode = StatusCodes.Status400BadRequest
@@ -182,7 +200,7 @@ namespace WhatsAppBridge.Controllers
 
             if (String.IsNullOrWhiteSpace(model.TemplateName))
             {
-                return BadRequest(new ApiResult
+                return Ok(new ApiResult
                 {
                     Message = "Template name shouldn't be empty",
                     StatusCode = StatusCodes.Status400BadRequest
@@ -190,22 +208,71 @@ namespace WhatsAppBridge.Controllers
             }
 
             var response = await _whatsAppHandler.HandleSendBatchTemplateMessage(model);
-            if (response == null || response.Count == 0)
+            return Ok(response);
+        }
+
+        [HttpPost("TemplateMessageOps")]
+        public async Task<IActionResult> TemplateMessageOps(CreateMessageTemplateRequestDto model)
+        {
+            _logger.LogInformation("Received CreateMessageTemplateRequestDto request with data={data}", JsonConvert.SerializeObject(model));
+
+            if (model == null)
             {
                 return Ok(new ApiResult
                 {
-                    StatusCode = StatusCodes.Status500InternalServerError,
-                    Message = "Something went wrong"
+                    Message = "Bad Request",
+                    StatusCode = StatusCodes.Status400BadRequest
                 });
             }
 
-            return Ok(new ApiResult
+            if (String.IsNullOrWhiteSpace(model.ClientId))
             {
-                Success = true,
-                StatusCode = 200,
-                Message = "Template sent successfully",
-                Result = response
-            });
-        }
+                return Ok(new ApiResult
+                {
+                    Message = "Client Id shouldn't be empty",
+                    StatusCode = StatusCodes.Status400BadRequest
+                });
+            }
+
+            if (String.IsNullOrWhiteSpace(model.SenderNameId))
+            {
+                return Ok(new ApiResult
+                {
+                    Message = "Sender Name Id shouldn't be empty",
+                    StatusCode = StatusCodes.Status400BadRequest
+                });
+            }
+
+            if (String.IsNullOrWhiteSpace(model.LanguageCode))
+            {
+                return Ok(new ApiResult
+                {
+                    Message = "Language code shouldn't be empty",
+                    StatusCode = StatusCodes.Status400BadRequest
+                });
+            }
+
+            if (String.IsNullOrWhiteSpace(model.Name))
+            {
+                return Ok(new ApiResult
+                {
+                    Message = "Name shouldn't be empty",
+                    StatusCode = StatusCodes.Status400BadRequest
+                });
+            }
+
+            if (String.IsNullOrWhiteSpace(model.Category))
+            {
+                return Ok(new ApiResult
+                {
+                    Message = "Category shouldn't be empty",
+                    StatusCode = StatusCodes.Status400BadRequest
+                });
+            }
+
+            var resp = await _whatsAppHandler.HandleMessageTemplateOps(model);
+
+            return Ok(resp);
+        } 
     }
 }

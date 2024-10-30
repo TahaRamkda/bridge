@@ -8,7 +8,8 @@
         }
 
         public string ClientId { get; set; }
-        public string PhoneId { get; set; }
+        public string SenderNameId { get; set; }
+        //public string PhoneId { get; set; }
         public List<string> PhoneNumbers { get; set; }
         public string LanguageCode { get; set; }
         public string TemplateId { get; set; }

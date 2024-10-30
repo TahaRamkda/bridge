@@ -42,8 +42,8 @@ namespace WhatsAppBridge.Handler
                 var fullUrl = CommonHelper.GetFullUrl(baseUrl, $"/{templateUpdate.message_template_id}");
                 _logger.LogInformation("Calling WhatsApp GetTemplateById method with templateId {templateId} with url {url}", templateUpdate.message_template_id, fullUrl);
 
-                var accessToken = await _integrationHandler.GetAccessTokenByClientId(clientId);
-                _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {accessToken}");
+                var clientInfo = await _integrationHandler.GetClientInformation(clientId);
+                _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {clientInfo.AccessToken}");
                 var response = await _httpClient.GetAsync($"/{templateUpdate.message_template_id}");
                 var content = await response.Content.ReadAsStringAsync();
 

@@ -37,7 +37,7 @@ namespace WhatsAppBridge.Handler
 
         #region Methods
 
-        public async Task<string> GetAccessTokenByClientId(string clientId)
+        public async Task<ClientInformationDto> GetClientInformation(string clientId)
         {
             string requestStr = String.Empty;
             string fullUrl = String.Empty;
@@ -45,28 +45,71 @@ namespace WhatsAppBridge.Handler
 
             try
             {
-                _logger.LogInformation("Calling function GetAccessTokenByClientId with clientId {clientId}", clientId);
+                _logger.LogInformation("Calling function GetClientInformation with clientId {clientId}", clientId);
 
-                _logger.LogInformation("Executing function GetAccessTokenByClientId Calling Integration GetClientAccessToken method with clientId {clientId}", clientId);
+                _logger.LogInformation("Executing function GetClientInformation Calling Integration GetClientAccessToken method with clientId {clientId}", clientId);
 
                 requestStr = clientId;
-                fullUrl = CommonHelper.GetFullUrl(baseUrl, $"/clients/getclientaccesstoken?client_Id={clientId}");
+                fullUrl = CommonHelper.GetFullUrl(baseUrl, $"/clients/getclientinformation?client_Id={clientId}");
 
-                var response = await _httpClient.GetAsync($"/clients/getclientaccesstoken?client_Id={clientId}");
+                var response = await _httpClient.GetAsync($"/clients/getclientinformation?client_Id={clientId}");
                 responseStr = await response.Content.ReadAsStringAsync();
 
-                _logger.LogInformation("Received response when executing function GetAccessTokenByClientId of Integration GetClientAccessToken method with clientId {clientId} with url {url} and request {request} and content {content}", clientId, fullUrl, requestStr, responseStr);
+                _logger.LogInformation("Received response when executing function GetClientInformation of Integration GetClientInformation method with clientId {clientId} with url {url} and request {request} and content {content}", clientId, fullUrl, requestStr, responseStr);
 
                 var result = JsonConvert.DeserializeObject<ApiResult>(responseStr);
                 if (result != null && result.Success)
-                    return (string)result.Result;
+                {
+                    var clientInfo = JsonConvert.DeserializeObject<ClientInformationDto>(JsonConvert.SerializeObject(result.Result));
+                    if (clientInfo != null)
+                        return clientInfo;
+                }
 
-                _logger.LogInformation("Received response when executing function GetAccessTokenByClientId of Integration GetClientAccessToken method with clientId {clientId} with url {url} and request {request} and content {content}", clientId, fullUrl, requestStr, responseStr);
+                _logger.LogInformation("Received response when executing function GetClientInformation of Integration GetClientAccessToken method with clientId {clientId} with url {url} and request {request} and content {content}", clientId, fullUrl, requestStr, responseStr);
 
             }
             catch (Exception ex)
             {
-                _logger.LogError("Exception occurred {exception} when executing function GetAccessTokenByClientId of Integration GetClientAccessToken method with clientId {clientId} with url {url} and request {request} and content {content}", ex, clientId, fullUrl, requestStr, responseStr);
+                _logger.LogError("Exception occurred {exception} when executing function GetClientInformation of Integration GetClientAccessToken method with clientId {clientId} with url {url} and request {request} and content {content}", ex, clientId, fullUrl, requestStr, responseStr);
+            }
+
+            return null;
+        }
+
+        public async Task<SenderNameInformationDto> GetSenderInformation(string clientId, string senderNameId)
+        {
+            string requestStr = String.Empty;
+            string fullUrl = String.Empty;
+            string responseStr = String.Empty;
+
+            try
+            {
+                _logger.LogInformation("Calling function GetSenderInformation with clientId {clientId} and senderNameId {senderNameId}", clientId, senderNameId);
+
+                _logger.LogInformation("Executing function GetSenderInformation Calling Integration GetClientAccessToken method with clientId {clientId} and senderNameId {senderNameId}", clientId, senderNameId);
+
+                requestStr = clientId;
+                fullUrl = CommonHelper.GetFullUrl(baseUrl, $"/sendernames/getsendernameinformation?client_Id={clientId}&sender_Name_Id={senderNameId}");
+
+                var response = await _httpClient.GetAsync($"/sendernames/getsendernameinformation?client_Id={clientId}&sender_Name_Id={senderNameId}");
+                responseStr = await response.Content.ReadAsStringAsync();
+
+                _logger.LogInformation("Received response when executing function GetSenderInformation of Integration GetClientInformation method with clientId {clientId} and senderNameId {senderNameId} with url {url} and request {request} and content {content}", clientId, senderNameId, fullUrl, requestStr, responseStr);
+
+                var result = JsonConvert.DeserializeObject<ApiResult>(responseStr);
+                if (result != null && result.Success)
+                {
+                    var senderNameInfo = JsonConvert.DeserializeObject<SenderNameInformationDto>(JsonConvert.SerializeObject(result.Result));
+                    if (senderNameInfo != null)
+                        return senderNameInfo;
+                }
+
+                _logger.LogInformation("Received response when executing function GetSenderInformation of Integration GetClientAccessToken method with clientId {clientId} and senderNameId {senderNameId} with url {url} and request {request} and content {content}", clientId, senderNameId, fullUrl, requestStr, responseStr);
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Exception occurred {exception} when executing function GetSenderInformation of Integration GetClientAccessToken method with clientId {clientId} and senderNameId {senderNameId} with url {url} and request {request} and content {content}", ex, clientId, senderNameId, fullUrl, requestStr, responseStr);
             }
 
             return null;

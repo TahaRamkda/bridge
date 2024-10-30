@@ -8,7 +8,8 @@
         }
 
         public string ClientId { get; set; }
-        public string PhoneId { get; set; }
+        public string SenderNameId { get; set; }
+        //public string PhoneId { get; set; }
         public string Type { get; set; }
         public string Message { get; set; }
         public string MediaId { get; set; }

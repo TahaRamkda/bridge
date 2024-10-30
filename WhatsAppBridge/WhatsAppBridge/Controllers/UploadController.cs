@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -16,13 +17,16 @@ namespace WhatsAppBridge.Controllers
     {
         private readonly ILogger<UploadController> _logger;
         private readonly WhatsAppHandler _whatsAppHandler;
+        private readonly IWebHostEnvironment _webHostEnvironment;
 
         public UploadController(ILogger<UploadController> logger,
             IOptions<WhatsAppConfigurationSetting> whatsAppConfigurationSetting,
-            WhatsAppHandler whatsAppHandler)
+            WhatsAppHandler whatsAppHandler,
+            IWebHostEnvironment webHostEnvironment)
         {
             _logger = logger;
             _whatsAppHandler = whatsAppHandler;
+            _webHostEnvironment = webHostEnvironment;
         }
 
         [HttpPost("UploadMedia")]
@@ -32,7 +36,7 @@ namespace WhatsAppBridge.Controllers
 
             if (model == null)
             {
-                return BadRequest(new ApiResult
+                return Ok(new ApiResult
                 {
                     Message = "Bad Request",
                     StatusCode = StatusCodes.Status400BadRequest
@@ -41,16 +45,25 @@ namespace WhatsAppBridge.Controllers
 
             if (String.IsNullOrWhiteSpace(model.ClientId))
             {
-                return BadRequest(new ApiResult
+                return Ok(new ApiResult
                 {
                     Message = "Client id shouldn't be empty",
                     StatusCode = StatusCodes.Status400BadRequest
                 });
             }
 
+            if (String.IsNullOrWhiteSpace(model.SenderNameId))
+            {
+                return Ok(new ApiResult
+                {
+                    Message = "Sender Name Id shouldn't be empty",
+                    StatusCode = StatusCodes.Status400BadRequest
+                });
+            }
+
             if (model.Medias == null || !model.Medias.Any())
             {
-                return BadRequest(new ApiResult
+                return Ok(new ApiResult
                 {
                     Message = "Please upload media",
                     StatusCode = StatusCodes.Status400BadRequest
@@ -58,12 +71,7 @@ namespace WhatsAppBridge.Controllers
             }
 
             var results = await _whatsAppHandler.HandleMediaUpload(model);
-
-            return Ok(new ApiResult
-            {
-                Success = true,
-                Result = results
-            });
+            return Ok(results);
         }
     }
 }

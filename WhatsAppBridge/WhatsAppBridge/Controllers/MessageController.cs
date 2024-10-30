@@ -26,7 +26,6 @@ namespace WhatsAppBridge.Controllers
             _whatsAppHandler = whatsAppHandler;
         }
 
-
         [HttpPost("SendBatchMessage")]
         public async Task<IActionResult> SendBatchMessage([FromBody] SendMessageRequestDto model)
         {
@@ -34,7 +33,7 @@ namespace WhatsAppBridge.Controllers
 
             if (model == null)
             {
-                return BadRequest(new ApiResult
+                return Ok(new ApiResult
                 {
                     Message = "Bad Request",
                     StatusCode = StatusCodes.Status400BadRequest
@@ -43,25 +42,25 @@ namespace WhatsAppBridge.Controllers
 
             if (String.IsNullOrWhiteSpace(model.ClientId))
             {
-                return BadRequest(new ApiResult
+                return Ok(new ApiResult
                 {
                     Message = "Client id shouldn't be empty",
                     StatusCode = StatusCodes.Status400BadRequest
                 });
             }
 
-            if (String.IsNullOrWhiteSpace(model.PhoneId))
+            if (String.IsNullOrWhiteSpace(model.SenderNameId))
             {
-                return BadRequest(new ApiResult
+                return Ok(new ApiResult
                 {
-                    Message = "Message shouldn't be empty",
+                    Message = "Sender Name Id shouldn't be empty",
                     StatusCode = StatusCodes.Status400BadRequest
                 });
             }
 
             if (String.IsNullOrWhiteSpace(model.Type))
             {
-                return BadRequest(new ApiResult
+                return Ok(new ApiResult
                 {
                     Message = "Type shouldn't be empty",
                     StatusCode = StatusCodes.Status400BadRequest
@@ -70,7 +69,7 @@ namespace WhatsAppBridge.Controllers
 
             if (model.Type == MessageType.TEXT && String.IsNullOrWhiteSpace(model.Message))
             {
-                return BadRequest(new ApiResult
+                return Ok(new ApiResult
                 {
                     Message = "Message shouldn't be empty",
                     StatusCode = StatusCodes.Status400BadRequest
@@ -79,7 +78,7 @@ namespace WhatsAppBridge.Controllers
 
             if (!model.PhoneNumbers.Any())
             {
-                return BadRequest(new ApiResult
+                return Ok(new ApiResult
                 {
                     Message = "Please enter phone number(s)",
                     StatusCode = StatusCodes.Status400BadRequest
@@ -87,22 +86,7 @@ namespace WhatsAppBridge.Controllers
             }
 
             var response = await _whatsAppHandler.HandleSendBatchMessage(model);
-            if (response == null || response.Count == 0)
-            {
-                return Ok(new ApiResult
-                {
-                    StatusCode = StatusCodes.Status500InternalServerError,
-                    Message = "Something went wrong"
-                });
-            }
-
-            return Ok(new ApiResult
-            {
-                Success = true,
-                StatusCode = 200,
-                Message = "Message sent successfully",
-                Result = response
-            });
+            return Ok(response);
         }
     }
 }

@@ -2,7 +2,10 @@
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Dynamic;
+using System.IO;
 using System.Net.Http.Headers;
+using System.Text;
 using WhatsAppBridge.Helpers;
 using WhatsAppBridge.Models;
 using WhatsAppBridge.Models.Integration;
@@ -109,7 +112,7 @@ namespace WhatsAppBridge.Handler
                 {
                     var component = new SendMessageTemplateModel.Template.Component
                     {
-                        type = "HEADER"
+                        type = "HEADER" 
                     };
 
                     foreach (var value in obj.Values.OrderBy(x => x.Index))
@@ -401,6 +404,119 @@ namespace WhatsAppBridge.Handler
             }
         }
 
+        private async Task<string> UploadMediaAsset(string phoneId, string accessToken, string appId, string url)
+        {
+            string sessionId = String.Empty;
+            string fileHandleId = String.Empty;
+            string filepath = String.Empty;
+
+            try
+            {
+                _logger.LogInformation("Processing file in function UploadMediaAsset with input url {url}", url);
+
+                if (String.IsNullOrWhiteSpace(url))
+                {
+                    _logger.LogError("Error in processing file in function UploadMediaAsset with url {url}, item does not have URL", url);
+                }
+
+                //MediaPath
+                var mediaDirectory = String.Concat(_webHostEnvironment.ContentRootPath, "MediaAssets");
+                if (!Directory.Exists(mediaDirectory))
+                    Directory.CreateDirectory(mediaDirectory);
+
+                HttpResponseMessage headResponses = await _httpClient.GetAsync(url);
+                if (!headResponses.Content.Headers.ContentLength.HasValue)
+                {
+                    _logger.LogError("Error in processing file in function UploadMediaAsset with url {url}, cannot fetch file from origin server", url);
+                    return String.Empty;
+                }
+
+                // Create a Uri object
+                Uri uri = new Uri(url);
+
+                // Get the file name from the Uri
+                string filename = Path.GetFileName(uri.LocalPath);
+
+                filepath = Path.Combine(mediaDirectory, filename);
+
+                await using var savefileStream = new FileStream(filepath, FileMode.Create, FileAccess.Write);
+                await headResponses.Content.CopyToAsync(savefileStream);
+                FileInfo fileInfo = new FileInfo(filepath);
+                var fileLength = fileInfo.Length;
+
+                string contentType = String.Empty;
+                new FileExtensionContentTypeProvider().TryGetContentType(fileInfo.FullName, out contentType);
+
+                savefileStream.Close();
+                savefileStream.Dispose();
+
+                var uploadSessionResponse = await _httpClient.PostAsync($"{appId}/uploads" +
+                    $"?file_name={filename}&file_length={fileLength}&file_type={contentType}&access_token={accessToken}", new StringContent(string.Empty));
+
+                var uploadSessionResponseContent = await uploadSessionResponse.Content.ReadAsStringAsync();
+                if (!uploadSessionResponse.IsSuccessStatusCode)
+                {
+                    _logger.LogError("Error in processing file in function UploadMediaAsset with url {url} and response {response}, doesn't received upload session id from facebook", url, uploadSessionResponseContent);
+                    return String.Empty;
+                }
+
+                var jsonResponse = JObject.Parse(uploadSessionResponseContent);
+                sessionId = jsonResponse["id"]?.ToString();
+
+                if (String.IsNullOrWhiteSpace(sessionId))
+                {
+                    _logger.LogError("Error in processing file in function UploadMediaAsset with url {url} and response {response}, doesn't received upload session id from facebook", url, uploadSessionResponseContent);
+                    return String.Empty;
+                }
+
+                var request = new HttpRequestMessage(HttpMethod.Post, $"{_whatsAppConfigurationSetting.Value.BaseURL}/{sessionId}");
+
+                request.Headers.Clear();
+                request.Headers.Add("authorization", $"OAuth {accessToken}");
+                request.Headers.Add("file_offset", "0");
+
+                // Prepare file content
+                using (var content = new MultipartFormDataContent())
+                {
+                    // Read the file from the local path
+                    var fileStream = new FileStream(filepath, FileMode.Open, FileAccess.Read);
+                    var fileContent = new StreamContent(fileStream);
+                    fileContent.Headers.ContentType = new MediaTypeHeaderValue(contentType);
+
+                    // Add file content to the form-data
+                    content.Add(fileContent, "data-binary");
+
+                    // Assign content to the request
+                    request.Content = content;
+
+                    // Send the request and get the response
+                    var uploadfileResponse = await _httpClient.SendAsync(request);
+                    var uploadFileResponseContent = await uploadfileResponse.Content.ReadAsStringAsync();
+
+                    if (!uploadfileResponse.IsSuccessStatusCode)
+                    {
+                        _logger.LogError("Error in processing file in function UploadMediaAsset with url {url} and sessionId {sessionId} and response {response}, doesn't received upload session id from facebook", url, sessionId, uploadSessionResponseContent);
+                        return String.Empty;
+                    }
+
+                    var fileJsonResponse = JObject.Parse(uploadFileResponseContent);
+                    fileHandleId = fileJsonResponse["h"]?.ToString();
+                    return fileHandleId;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Exception occurred {exception} when executing function UploadMediaAsset with url {url} and sessionId {sessionId} and fileHandleId {fileHandleId}", ex, url, sessionId, fileHandleId);
+            }
+            finally // Delete the media
+            {
+                if (File.Exists(filepath))
+                    File.Delete(filepath);
+            }
+
+            return String.Empty;
+        }
+
         #endregion
 
         #region Methods
@@ -410,14 +526,14 @@ namespace WhatsAppBridge.Handler
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
-        public async Task<List<SendMessageResponseDto>> HandleSendBatchMessage(SendMessageRequestDto model)
+        public async Task<ApiResult> HandleSendBatchMessage(SendMessageRequestDto model)
         {
             List<SendMessageResponseDto> models = new List<SendMessageResponseDto>();
 
             try
             {
                 model.Type = model.Type.ToLower();
-                model.PhoneId = model.PhoneId.Trim();
+                //model.PhoneId = model.PhoneId.Trim();
                 model.Message = model.Message.Trim();
                 model.PhoneNumbers = model.PhoneNumbers.Where(x => !String.IsNullOrWhiteSpace(x)).Select(x => x.Replace("+", "").Trim()).ToList();
                 int batchSize = _whatsAppConfigurationSetting.Value.SendMessageBatchSize;
@@ -425,8 +541,17 @@ namespace WhatsAppBridge.Handler
 
                 _logger.LogInformation("Calling function HandleSendBatchMessage with received object {object} with batch size {batchSize} and totalbatchCount {totalbatchCount}", JsonConvert.SerializeObject(model), batchSize, batches.Count);
 
-                var accessToken = await _integrationHandler.GetAccessTokenByClientId(model.ClientId);
-                _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {accessToken}");
+                var senderInfo = await _integrationHandler.GetSenderInformation(model.ClientId, model.SenderNameId);
+                if (senderInfo == null)
+                {
+                    return new ApiResult
+                    {
+                        StatusCode = 404,
+                        Message = $"Sender not found with clientId: {model.ClientId} and senderNameId:{model.SenderNameId}"
+                    };
+                }
+
+                _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {senderInfo.AccessToken}");
 
                 dynamic messageContent = GetMessageContent(model);
                 for (int i = 0; i < batches.Count; i++)
@@ -442,7 +567,7 @@ namespace WhatsAppBridge.Handler
                             batch = batch.Select(recipient => new Batch
                             {
                                 method = "POST",
-                                relative_url = $"{model.PhoneId}/messages",
+                                relative_url = $"{senderInfo.PhoneNumberId}/messages",
                                 body = $"messaging_product=whatsapp&recipient_type=individual&to={recipient}&type={model.Type}&{model.Type}={JsonConvert.SerializeObject(messageContent)}"
                             }).ToList()
                         };
@@ -507,7 +632,23 @@ namespace WhatsAppBridge.Handler
 
             _logger.LogInformation("Execution ends for function HandleSendBatchMessage with received object {object} and response {response}", JsonConvert.SerializeObject(model), JsonConvert.SerializeObject(models));
 
-            return models;
+            if (!models.Any())
+            {
+                return new ApiResult
+                {
+                    StatusCode = 400,
+                    Message = "Couldn't send messages",
+                    Result = models
+                };
+            }
+
+            return new ApiResult
+            {
+                Success = true,
+                StatusCode = 200,
+                Message = "Data processed succesfully",
+                Result = models
+            };
         }
 
         /// <summary>
@@ -515,13 +656,12 @@ namespace WhatsAppBridge.Handler
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
-        public async Task<List<SendMessageResponseDto>> HandleSendBatchTemplateMessage(SendMessageTemplateRequestDto model)
+        public async Task<ApiResult> HandleSendBatchTemplateMessage(SendMessageTemplateRequestDto model)
         {
             List<SendMessageResponseDto> models = new List<SendMessageResponseDto>();
 
             try
             {
-
                 model.PhoneNumbers = model.PhoneNumbers.Where(x => !String.IsNullOrWhiteSpace(x)).Select(x => x.Replace("+", "").Trim()).ToList();
                 int batchSize = _whatsAppConfigurationSetting.Value.SendMessageBatchSize;
                 var batches = model.PhoneNumbers.ChunkBy(batchSize);
@@ -530,8 +670,17 @@ namespace WhatsAppBridge.Handler
 
                 var template = GetTemplateContent(model);
 
-                var accessToken = await _integrationHandler.GetAccessTokenByClientId(model.ClientId);
-                _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {accessToken}");
+                var senderInfo = await _integrationHandler.GetSenderInformation(model.ClientId, model.SenderNameId);
+                if (senderInfo == null)
+                {
+                    return new ApiResult
+                    {
+                        StatusCode = 404,
+                        Message = $"Client not found with clientId: {model.ClientId}"
+                    };
+                }
+
+                _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {senderInfo.AccessToken}");
 
                 for (int i = 0; i < batches.Count; i++)
                 {
@@ -546,7 +695,7 @@ namespace WhatsAppBridge.Handler
                             batch = batch.Select(recipient => new Batch
                             {
                                 method = "POST",
-                                relative_url = $"{model.PhoneId}/messages",
+                                relative_url = $"{senderInfo.PhoneNumberId}/messages",
                                 body = $"messaging_product=whatsapp&recipient_type=individual&to={recipient}&type={template.type}&{template.type}={JsonConvert.SerializeObject(template.template)}"
                             }).ToList()
                         };
@@ -611,7 +760,23 @@ namespace WhatsAppBridge.Handler
 
             _logger.LogInformation("Execution ends for function HandleSendBatchTemplateMessage with received object {object} and response {response}", JsonConvert.SerializeObject(model), JsonConvert.SerializeObject(models));
 
-            return models;
+            if (!models.Any())
+            {
+                return new ApiResult
+                {
+                    StatusCode = 400,
+                    Message = "Couldn't send messages",
+                    Result = models
+                };
+            }
+
+            return new ApiResult
+            {
+                Success = true,
+                StatusCode = 200,
+                Message = "Data processed succesfully",
+                Result = models
+            };
         }
 
         /// <summary>
@@ -620,21 +785,334 @@ namespace WhatsAppBridge.Handler
         /// <param name="model"></param>
         /// <returns></returns>
         /// <exception cref="BadHttpRequestException"></exception>
-        public async Task<List<UploadMediaResultDto>> HandleMediaUpload(UploadMediaDto model)
+        public async Task<ApiResult> HandleMediaUpload(UploadMediaDto model)
         {
             _logger.LogInformation("Calling function HandleMediaUpload with received payload {payload}", JsonConvert.SerializeObject(model));
 
-            var accessToken = await _integrationHandler.GetAccessTokenByClientId(model.ClientId);
-            _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {accessToken}");
+            var senderInfo = await _integrationHandler.GetSenderInformation(model.ClientId, model.SenderNameId);
+            if (senderInfo == null)
+            {
+                return new ApiResult
+                {
+                    StatusCode = 404,
+                    Message = $"Sender not found with clientId: {model.ClientId} and senderId: {model.SenderNameId}"
+                };
+            }
+
+            _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {senderInfo.AccessToken}");
 
             List<UploadMediaResultDto> results = new List<UploadMediaResultDto>();
             foreach (var item in model.Medias)
             {
-                var media = await UploadMedia(model.PhoneId, item);
+                var media = await UploadMedia(senderInfo.PhoneNumberId, item);
                 results.Add(media);
             }
 
-            return results;
+            return new ApiResult
+            {
+                Success = true,
+                Result = results,
+                Message = "Media(s) processed successfully",
+                StatusCode = 200
+            };
+        }
+
+        /// <summary>
+        /// Handle media upload
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
+        /// <exception cref="BadHttpRequestException"></exception>
+        public async Task<ApiResult> HandleMessageTemplateOps(CreateMessageTemplateRequestDto model)
+        {
+            string requestStr = String.Empty;
+            string responseStr = String.Empty;
+
+            try
+            {
+                _logger.LogInformation("Calling function HandleMessageTemplateOps with received payload {payload}", JsonConvert.SerializeObject(model));
+
+                var senderNameInfo = await _integrationHandler.GetSenderInformation(model.ClientId, model.SenderNameId);
+                if (senderNameInfo == null)
+                {
+                    return new ApiResult
+                    {
+                        StatusCode = 404,
+                        Message = $"Sender name not found with clientId: {model.ClientId} and senderNameId: {model.SenderNameId}"
+                    };
+                }
+
+                _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {senderNameInfo.AccessToken}");
+
+                string messageTemplateId = String.Empty;
+                var resp = await _httpClient.GetAsync($"/{senderNameInfo.BusinessAccountId}/message_templates?fields=name,id,status&name={model.Name}&limit=1");
+                responseStr = await resp.Content.ReadAsStringAsync();
+
+                var messageTemplates = JsonConvert.DeserializeObject<MessageTemplateListResponse>(responseStr);
+                if (messageTemplates != null && messageTemplates.data != null && messageTemplates.data.Any())
+                    messageTemplateId = messageTemplates.data[0].id;
+
+                var template = new CreateMessageTemplateRequestModel
+                {
+                    name = model.Name.Replace(" ", "_").Trim(),
+                    category = model.Category.Trim(),
+                    language = model.LanguageCode.Trim(),
+                    allow_category_change = false
+                };
+
+                //Add Header
+                if (model.Header != null)
+                {
+                    model.Header.Format = model.Header.Format.Trim().ToUpper();
+                    dynamic header = new ExpandoObject();
+
+                    header.type = "HEADER";
+                    header.format = model.Header.Format;
+
+                    if (model.Header.Format == TemplateHeaderFormatTypeModel.TEXT)
+                    {
+                        header.text = model.Header.Text;
+
+                        if (!String.IsNullOrWhiteSpace(model.Header.Example))
+                        {
+                            header.example = new
+                            {
+                                header_text = new List<string> { model.Header.Example.Trim() }
+                            };
+                        }
+                    }
+
+                    if (model.Header.Format == TemplateHeaderFormatTypeModel.IMAGE
+                        || model.Header.Format == TemplateHeaderFormatTypeModel.VIDEO
+                        || model.Header.Format == TemplateHeaderFormatTypeModel.DOCUMENT)
+                    {
+                        var fileHandleId = await UploadMediaAsset(senderNameInfo.PhoneNumberId, senderNameInfo.AccessToken, senderNameInfo.AppId, model.Header.MediaUrl);
+
+                        if (String.IsNullOrWhiteSpace(fileHandleId))
+                        {
+                            return new ApiResult
+                            {
+                                StatusCode = 404,
+                                Message = $"Cannot uploaded provided header media with url {model.Header.MediaUrl}"
+                            };
+                        }
+
+                        header.example = new
+                        {
+                            header_handle = new List<string>
+                            {
+                               fileHandleId
+                            }
+                        };
+                    }
+
+                    template.components.Add(header);
+                }
+
+                //Add Body
+                if (model.Body != null && !String.IsNullOrWhiteSpace(model.Body.Text))
+                {
+                    dynamic body = new ExpandoObject();
+
+                    body.type = "BODY";
+                    body.text = model.Body.Text.Trim();
+
+                    if (model.Body.Examples.Any())
+                    {
+                        body.example = new
+                        {
+                            body_text = new List<object>
+                            {
+                                new List<object> {
+                                    String.Join(',', model.Body.Examples)
+                                }
+                            }
+                        };
+                    }
+
+                    template.components.Add(body);
+                }
+
+                //Add Footer
+                if (model.Footer != null && !String.IsNullOrWhiteSpace(model.Footer.Text))
+                {
+                    dynamic footer = new ExpandoObject();
+
+                    footer.type = "FOOTER";
+                    footer.text = model.Footer.Text.Trim();
+
+                    template.components.Add(footer);
+                }
+
+                //Add Buttons
+                if (model.Buttons.Any())
+                {
+                    dynamic buttons = new ExpandoObject();
+                    buttons.type = "BUTTONS";
+                    buttons.buttons = new List<dynamic>();
+
+                    foreach (var button in model.Buttons)
+                    {
+                        button.Type = button.Type.Trim().ToUpper();
+                        if (button.Type == TemplateButtonTypeModel.QUICK_REPLY && !String.IsNullOrWhiteSpace(button.Text))
+                        {
+                            dynamic buttonObj = new
+                            {
+                                type = TemplateButtonTypeModel.QUICK_REPLY,
+                                text = button.Text.Trim()
+                            };
+
+                            buttons.buttons.Add(buttonObj);
+                        }
+                        else if (button.Type == TemplateButtonTypeModel.PHONE_NUMBER
+                            && !String.IsNullOrWhiteSpace(button.Text)
+                            && !String.IsNullOrWhiteSpace(button.PhoneNumber))
+                        {
+                            dynamic buttonObj = new
+                            {
+                                type = TemplateButtonTypeModel.PHONE_NUMBER,
+                                text = button.Text.Trim(),
+                                phone_number = button.PhoneNumber.Trim()
+                            };
+
+                            buttons.buttons.Add(buttonObj);
+                        }
+                        else if (button.Type == TemplateButtonTypeModel.URL
+                            && !String.IsNullOrWhiteSpace(button.Text)
+                            && !String.IsNullOrWhiteSpace(button.Url))
+                        {
+                            dynamic buttonObj = new
+                            {
+                                type = TemplateButtonTypeModel.URL,
+                                text = button.Text.Trim(),
+                                url = button.Url.Trim()
+                            };
+
+                            if (!String.IsNullOrWhiteSpace(button.Example))
+                            {
+                                buttonObj.example = new List<string>
+                                {
+                                    button.Example.Trim()
+                                };
+                            }
+
+                            buttons.buttons.Add(buttonObj);
+                        }
+                    }
+
+                    template.components.Add(buttons);
+                }
+
+                requestStr = JsonConvert.SerializeObject(template);
+
+                _logger.LogInformation("Created Message Template Request in function HandleMessageTemplateOps with received object {object} with request {request}", JsonConvert.SerializeObject(model), requestStr);
+
+                // Send the update request   
+                if (!String.IsNullOrWhiteSpace(messageTemplateId))
+                {
+                    resp = await _httpClient.PostAsync($"/{messageTemplateId}", new StringContent(requestStr, null, "application/json"));
+                    responseStr = await resp.Content.ReadAsStringAsync();
+
+                    _logger.LogInformation("Received Update Template Message Response in function HandleMessageTemplateOps with received object {object} with request {request} and response {response}", JsonConvert.SerializeObject(model), requestStr, responseStr);
+
+                    var updateTemplate = JsonConvert.DeserializeObject<UpdateMessageTemplateResponseModel>(responseStr);
+                    if (updateTemplate != null)
+                    {
+                        if (updateTemplate.error != null)
+                        {
+                            StringBuilder err = new StringBuilder();
+                            if (!String.IsNullOrWhiteSpace(updateTemplate.error.message))
+                                err.Append(String.Concat(updateTemplate.error.message, ","));
+                            if (!String.IsNullOrWhiteSpace(updateTemplate.error.error_user_title))
+                                err.Append(String.Concat(updateTemplate.error.error_user_title, ","));
+                            if (!String.IsNullOrWhiteSpace(updateTemplate.error.error_user_msg))
+                                err.Append(String.Concat(updateTemplate.error.error_user_msg, ","));
+
+                            return new ApiResult
+                            {
+                                StatusCode = 400,
+                                Message = err.ToString().TrimEnd(',')
+                            };
+                        }
+                        else if (updateTemplate.success) //Get template by id
+                        {
+                            var response = await _httpClient.GetAsync($"/{messageTemplateId}");
+                            var content = await response.Content.ReadAsStringAsync();
+                            var messageTemplate = JsonConvert.DeserializeObject<MessageTemplateModel>(await response.Content.ReadAsStringAsync());
+
+                            return new ApiResult
+                            {
+                                Success = true,
+                                StatusCode = 200,
+                                Message = "Template updated successfully",
+                                Result = new
+                                {
+                                    Id = messageTemplate.id,
+                                    Status = messageTemplate.status,
+                                    Category = messageTemplate.category
+                                }
+                            };
+                        }
+                    }
+                }
+                else //Send the create request
+                {
+                    resp = await _httpClient.PostAsync($"/{senderNameInfo.BusinessAccountId}/message_templates", new StringContent(requestStr, null, "application/json"));
+                    responseStr = await resp.Content.ReadAsStringAsync();
+
+                    _logger.LogInformation("Received Create Template Message Response in function HandleMessageTemplateOps with received object {object} with request {request} and response {response}", JsonConvert.SerializeObject(model), requestStr, responseStr);
+
+                    var createTemplate = JsonConvert.DeserializeObject<CreateMessageTemplateResponseModel>(responseStr);
+                    if (createTemplate != null)
+                    {
+                        if (createTemplate.error != null)
+                        {
+                            StringBuilder err = new StringBuilder();
+                            if (!String.IsNullOrWhiteSpace(createTemplate.error.message))
+                                err.Append(String.Concat(createTemplate.error.message, ","));
+                            if (!String.IsNullOrWhiteSpace(createTemplate.error.error_user_title))
+                                err.Append(String.Concat(createTemplate.error.error_user_title, ","));
+                            if (!String.IsNullOrWhiteSpace(createTemplate.error.error_user_msg))
+                                err.Append(String.Concat(createTemplate.error.error_user_msg, ","));
+
+                            return new ApiResult
+                            {
+                                StatusCode = 400,
+                                Message = err.ToString().TrimEnd(',')
+                            };
+                        }
+                        else //Get template by id
+                        {
+                            var response = await _httpClient.GetAsync($"/{createTemplate.id}");
+                            var content = await response.Content.ReadAsStringAsync();
+                            var messageTemplate = JsonConvert.DeserializeObject<MessageTemplateModel>(await response.Content.ReadAsStringAsync());
+
+                            return new ApiResult
+                            {
+                                Success = true,
+                                StatusCode = 200,
+                                Message = "Template created successfully",
+                                Result = new
+                                {
+                                    Id = messageTemplate.id,
+                                    Status = messageTemplate.status,
+                                    Category = messageTemplate.category
+                                }
+                            };
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Exception occurred {exception} when executing function HandleMessageTemplateOps with received object {object} with request {request} and response {response}", ex, JsonConvert.SerializeObject(model), requestStr, responseStr);
+            }
+
+            return new ApiResult
+            {
+                StatusCode = 400,
+                Message = "Something went wrong"
+            };
         }
 
         #endregion
