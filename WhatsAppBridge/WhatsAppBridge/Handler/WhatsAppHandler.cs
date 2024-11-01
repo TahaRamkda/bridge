@@ -112,7 +112,7 @@ namespace WhatsAppBridge.Handler
                 {
                     var component = new SendMessageTemplateModel.Template.Component
                     {
-                        type = "HEADER" 
+                        type = "HEADER"
                     };
 
                     foreach (var value in obj.Values.OrderBy(x => x.Index))
@@ -830,6 +830,9 @@ namespace WhatsAppBridge.Handler
 
             try
             {
+                //Replace empty spaces in template name with _
+                model.Name = model.Name.Replace(" ", "_");
+
                 _logger.LogInformation("Calling function HandleMessageTemplateOps with received payload {payload}", JsonConvert.SerializeObject(model));
 
                 var senderNameInfo = await _integrationHandler.GetSenderInformation(model.ClientId, model.SenderNameId);
@@ -923,9 +926,7 @@ namespace WhatsAppBridge.Handler
                         {
                             body_text = new List<object>
                             {
-                                new List<object> {
-                                    String.Join(',', model.Body.Examples)
-                                }
+                                model.Body.Examples
                             }
                         };
                     }
@@ -1049,7 +1050,8 @@ namespace WhatsAppBridge.Handler
                                 {
                                     Id = messageTemplate.id,
                                     Status = messageTemplate.status,
-                                    Category = messageTemplate.category
+                                    Category = messageTemplate.category,
+                                    Name = messageTemplate.name
                                 }
                             };
                         }
@@ -1096,7 +1098,8 @@ namespace WhatsAppBridge.Handler
                                 {
                                     Id = messageTemplate.id,
                                     Status = messageTemplate.status,
-                                    Category = messageTemplate.category
+                                    Category = messageTemplate.category,
+                                    Name = messageTemplate.name
                                 }
                             };
                         }
