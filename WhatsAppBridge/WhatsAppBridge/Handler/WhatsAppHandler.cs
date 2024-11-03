@@ -957,11 +957,10 @@ namespace WhatsAppBridge.Handler
                         button.Type = button.Type.Trim().ToUpper();
                         if (button.Type == TemplateButtonTypeModel.QUICK_REPLY && !String.IsNullOrWhiteSpace(button.Text))
                         {
-                            dynamic buttonObj = new
-                            {
-                                type = TemplateButtonTypeModel.QUICK_REPLY,
-                                text = button.Text.Trim()
-                            };
+                            dynamic buttonObj = new ExpandoObject();
+
+                            buttonObj.type = TemplateButtonTypeModel.QUICK_REPLY;
+                            buttonObj.text = button.Text.Trim();
 
                             buttons.buttons.Add(buttonObj);
                         }
@@ -969,12 +968,11 @@ namespace WhatsAppBridge.Handler
                             && !String.IsNullOrWhiteSpace(button.Text)
                             && !String.IsNullOrWhiteSpace(button.PhoneNumber))
                         {
-                            dynamic buttonObj = new
-                            {
-                                type = TemplateButtonTypeModel.PHONE_NUMBER,
-                                text = button.Text.Trim(),
-                                phone_number = button.PhoneNumber.Trim()
-                            };
+                            dynamic buttonObj = new ExpandoObject();
+
+                            buttonObj.type = TemplateButtonTypeModel.PHONE_NUMBER;
+                            buttonObj.text = button.Text.Trim();
+                            buttonObj.phone_number = button.PhoneNumber.Trim();
 
                             buttons.buttons.Add(buttonObj);
                         }
@@ -982,12 +980,11 @@ namespace WhatsAppBridge.Handler
                             && !String.IsNullOrWhiteSpace(button.Text)
                             && !String.IsNullOrWhiteSpace(button.Url))
                         {
-                            dynamic buttonObj = new
-                            {
-                                type = TemplateButtonTypeModel.URL,
-                                text = button.Text.Trim(),
-                                url = button.Url.Trim()
-                            };
+                            dynamic buttonObj = new ExpandoObject();
+
+                            buttonObj.type = TemplateButtonTypeModel.URL;
+                            buttonObj.text = button.Text.Trim();
+                            buttonObj.url = button.Url.Trim();
 
                             if (!String.IsNullOrWhiteSpace(button.Example))
                             {
