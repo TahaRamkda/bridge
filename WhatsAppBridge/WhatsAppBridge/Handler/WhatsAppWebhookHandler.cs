@@ -7,6 +7,7 @@ using WhatsAppBridge.Models.Integration;
 using WhatsAppBridge.Models.WhatsApp;
 using WhatsAppBridge.Models.WhatsApp.Webhook;
 using WhatsAppBridge.Settings;
+using static WhatsAppBridge.Models.WhatsApp.Webhook.MessageUpdateWebhookModel;
 using static WhatsAppBridge.Models.WhatsApp.Webhook.WhatsAppWebhookModel;
 
 namespace WhatsAppBridge.Handler
@@ -76,9 +77,18 @@ namespace WhatsAppBridge.Handler
                             client_Id = clientId,
                             wam_Id = status.id,
                             status = status.status,
-                            update_DateTime = CommonHelper.ConvertDateTimeFormat(CommonHelper.ConvertFromEpoch(status.timestamp)),
+                            update_dateTime = CommonHelper.ConvertDateTimeFormat(CommonHelper.ConvertFromEpoch(status.timestamp)),
                             recipient_Id = status.recipient_id
                         };
+
+                        if (messageUpdate.metadata != null)
+                        {
+                            updateDto.phone_number_Id = new MessageStatusUpdateDto.PhoneNumber
+                            {
+                                display_phone_number = messageUpdate.metadata.display_phone_number,
+                                phone_number_id = messageUpdate.metadata.phone_number_id
+                            };
+                        }
 
                         if (status.conversation != null)
                         {
@@ -112,6 +122,58 @@ namespace WhatsAppBridge.Handler
                         }
 
                         await _integrationHandler.SendMessageStatusUpdate(updateDto);
+                    }
+                }
+
+                if (messageUpdate.messages != null && messageUpdate.messages.Any())
+                {
+                    foreach (var message in messageUpdate.messages)
+                    {
+                        var updateDto = new MessageReceiveDto
+                        {
+                            client_Id = clientId,
+                            wam_Id = message.id,
+                            from = message.from,
+                            update_dateTime = CommonHelper.ConvertDateTimeFormat(CommonHelper.ConvertFromEpoch(message.timestamp)),
+                            type = message.type
+                        };
+
+                        if (messageUpdate.metadata != null)
+                        {
+                            updateDto.phone_number_Id = new MessageReceiveDto.PhoneNumber
+                            {
+                                display_phone_number = messageUpdate.metadata.display_phone_number,
+                                phone_number_id = messageUpdate.metadata.phone_number_id
+                            };
+                        }
+
+                        if (message.context != null)
+                        {
+                            updateDto.context = new MessageReceiveDto.Context
+                            {
+                                from = message.context.from,
+                                wam_Id = message.context.id,
+                            };
+                        }
+
+                        if (message.text != null)
+                        {
+                            updateDto.text = new MessageReceiveDto.Text
+                            {
+                                body = message.text.body
+                            };
+                        }
+
+                        if (message.button != null)
+                        {
+                            updateDto.button = new MessageReceiveDto.Button
+                            {
+                                text = message.button.text,
+                                payload = message.button.payload
+                            };
+                        }
+
+                        await _integrationHandler.MessageReceiveUpdate(updateDto);
                     }
                 }
             }

@@ -1,4 +1,6 @@
-﻿namespace WhatsAppBridge.Models.WhatsApp.Webhook
+﻿using static WhatsAppBridge.Models.Integration.MessageReceiveDto;
+
+namespace WhatsAppBridge.Models.WhatsApp.Webhook
 {
     public class MessageUpdateWebhookModel
     {
@@ -100,9 +102,10 @@
 
             public string from { get; set; }
             public string id { get; set; }
-            public string timestamp { get; set; }
+            public long timestamp { get; set; }
             public string type { get; set; }
             public Text text { get; set; }
+            public Button button { get; set; }
             public Image image { get; set; }
 
             public class Text
@@ -116,6 +119,13 @@
                 public string sha256 { get; set; }
                 public string id { get; set; }
             }
+
+            public class Button
+            {
+                public string payload { get; set; }
+                public string text { get; set; }
+            }
+
         }
     }
 }

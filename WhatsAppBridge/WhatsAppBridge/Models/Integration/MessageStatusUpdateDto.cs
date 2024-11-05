@@ -5,11 +5,19 @@
         public string client_Id { get; set; }
         public string wam_Id { get; set; }
         public string status { get; set; }
-        public string update_DateTime { get; set; }
+        public string update_dateTime { get; set; }
         public string recipient_Id { get; set; }
         public Conversation conversation { get; set; }
         public Pricing pricing { get; set; }
         public Error error { get; set; }
+
+        public PhoneNumber phone_number_Id { get; set; }
+
+        public class PhoneNumber
+        {
+            public string display_phone_number { get; set; }
+            public string phone_number_id { get; set; }
+        }
 
         public class Conversation
         {

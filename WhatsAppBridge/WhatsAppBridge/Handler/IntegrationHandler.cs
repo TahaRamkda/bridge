@@ -368,6 +368,51 @@ namespace WhatsAppBridge.Handler
             }
         }
 
+        public async Task MessageReceiveUpdate(MessageReceiveDto updateDto)
+        {
+            try
+            {
+                _logger.LogInformation("Calling function MessageReceiveUpdate with received object {object}", JsonConvert.SerializeObject(updateDto));
+
+                string requestStr = String.Empty;
+                string fullUrl = String.Empty;
+                string responseStr = String.Empty;
+
+                try
+                {
+                    var result = new ApiResult
+                    {
+                        StatusCode = 200,
+                        Success = true,
+                        Result = updateDto
+                    };
+
+                    requestStr = JsonConvert.SerializeObject(result);
+                    fullUrl = CommonHelper.GetFullUrl(baseUrl, $"/message/whatsappmessagereceive");
+
+                    _logger.LogInformation("Executing function MessageReceiveUpdate Calling Integration whatsappmessagereceive method with clientId {clientId} with url {url} and request {request}", updateDto.client_Id, fullUrl, requestStr);
+
+                    var response = await _httpClient.PostAsync($"/message/whatsappmessagereceive", new StringContent(requestStr, null, "application/json"));
+
+                    if (!response.IsSuccessStatusCode) 
+                        responseStr = String.Concat("Status code: ", response.StatusCode, " | Reason: ", response.ReasonPhrase); 
+                    else 
+                        responseStr = await response.Content.ReadAsStringAsync(); 
+                     
+                    _logger.LogInformation("Received response when executing function MessageReceiveUpdate of Integration whatsappmessagereceive method with clientId {clientId} with url {url} and request {request} and content {content}", updateDto.client_Id, fullUrl, requestStr, responseStr);
+
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError("Exception occurred {exception} when executing function MessageReceiveUpdate of Integration whatsappmessagereceive method with clientId {clientId} with url {url} and request {request} and content {content}", ex, updateDto.client_Id, fullUrl, requestStr, responseStr);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Exception occurred {exception} when executing function MessageReceiveUpdate with received object {object}", ex, JsonConvert.SerializeObject(updateDto));
+            }
+        }
+         
         #endregion
     }
 }
