@@ -10,6 +10,8 @@
         public Context context { get; set; }
         public Button button { get; set; }
         public Text text { get; set; }
+        public Image image { get; set; }
+        public Document document { get; set; }
         public PhoneNumber phone_number_Id { get; set; }
 
         public class PhoneNumber
@@ -28,6 +30,21 @@
         {
             public string payload { get; set; }
             public string text { get; set; }
+        }
+
+        public class Image
+        {
+            public string id { get; set; }
+            public string mime_type { get; set; }
+            public string sha256 { get; set; }
+        }
+
+        public class Document
+        {
+            public string id { get; set; }
+            public string mime_type { get; set; }
+            public string sha256 { get; set; }
+            public string filename { get; set; }
         }
 
         public class Text

@@ -140,7 +140,10 @@ namespace WhatsAppBridge.Handler
                     _logger.LogInformation("Executing function SendMessageStatusUpdate Calling Integration whatsappmessagestatusupdate method with clientId {clientId} with url {url} and request {request}", updateDto.client_Id, fullUrl, requestStr);
 
                     var response = await _httpClient.PostAsync($"/message/whatsappmessagestatusupdate", new StringContent(requestStr, null, "application/json"));
-                    responseStr = await response.Content.ReadAsStringAsync();
+                    if (!response.IsSuccessStatusCode)
+                        responseStr = String.Concat("Status code: ", response.StatusCode, " | Reason: ", response.ReasonPhrase);
+                    else
+                        responseStr = await response.Content.ReadAsStringAsync();
 
                     _logger.LogInformation("Received response when executing function SendMessageStatusUpdate of Integration whatsappmessagestatusupdate method with clientId {clientId} with url {url} and request {request} and content {content}", updateDto.client_Id, fullUrl, requestStr, responseStr);
 

@@ -107,6 +107,7 @@ namespace WhatsAppBridge.Models.WhatsApp.Webhook
             public Text text { get; set; }
             public Button button { get; set; }
             public Image image { get; set; }
+            public Document document { get; set; }
 
             public class Text
             {
@@ -124,6 +125,14 @@ namespace WhatsAppBridge.Models.WhatsApp.Webhook
             {
                 public string payload { get; set; }
                 public string text { get; set; }
+            }
+
+            public class Document
+            {
+                public string filename { get; set; }
+                public string mime_type { get; set; }
+                public string sha256 { get; set; }
+                public string id { get; set; }
             }
 
         }

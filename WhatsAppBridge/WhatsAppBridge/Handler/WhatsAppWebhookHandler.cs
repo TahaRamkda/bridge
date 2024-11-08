@@ -173,6 +173,28 @@ namespace WhatsAppBridge.Handler
                             };
                         }
 
+                        if (message.image != null)
+                        {
+                            updateDto.image = new MessageReceiveDto.Image
+                            {
+                                id = message.image.id,
+                                mime_type = message.image.mime_type,
+                                sha256 = message.image.sha256
+                            };
+                        }
+
+
+                        if (message.document != null)
+                        {
+                            updateDto.document = new MessageReceiveDto.Document
+                            {
+                                id = message.document.id,
+                                mime_type = message.document.mime_type,
+                                sha256 = message.document.sha256,
+                                filename = message.document.filename
+                            };
+                        }
+
                         await _integrationHandler.MessageReceiveUpdate(updateDto);
                     }
                 }
