@@ -5,6 +5,7 @@ using Newtonsoft.Json.Linq;
 using System.Dynamic;
 using System.IO;
 using System.Net.Http.Headers;
+using System.Reflection.PortableExecutable;
 using System.Text;
 using WhatsAppBridge.Helpers;
 using WhatsAppBridge.Models;
@@ -818,7 +819,7 @@ namespace WhatsAppBridge.Handler
         }
 
         /// <summary>
-        /// Handle media upload
+        /// Handle message template OPS
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
@@ -1106,6 +1107,331 @@ namespace WhatsAppBridge.Handler
             catch (Exception ex)
             {
                 _logger.LogError("Exception occurred {exception} when executing function HandleMessageTemplateOps with received object {object} with request {request} and response {response}", ex, JsonConvert.SerializeObject(model), requestStr, responseStr);
+            }
+
+            return new ApiResult
+            {
+                StatusCode = 400,
+                Message = "Something went wrong"
+            };
+        }
+
+        /// <summary>
+        /// Handle carousel template OPS
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
+        /// <exception cref="BadHttpRequestException"></exception>
+        public async Task<ApiResult> HandleCarouselTemplateOps(CreateCarouselTemplateRequestDto model)
+        {
+            string requestStr = String.Empty;
+            string responseStr = String.Empty;
+
+            try
+            {
+                //Replace empty spaces in template name with _
+                model.Name = model.Name.Replace(" ", "_");
+
+                _logger.LogInformation("Calling function HandleCarouselTemplateOps with received payload {payload}", JsonConvert.SerializeObject(model));
+
+                var senderNameInfo = await _integrationHandler.GetSenderInformation(model.ClientId, model.SenderNameId);
+                if (senderNameInfo == null)
+                {
+                    return new ApiResult
+                    {
+                        StatusCode = 404,
+                        Message = $"Sender name not found with clientId: {model.ClientId} and senderNameId: {model.SenderNameId}"
+                    };
+                }
+
+                _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {senderNameInfo.AccessToken}");
+
+                string messageTemplateId = String.Empty;
+                var resp = await _httpClient.GetAsync($"/{senderNameInfo.BusinessAccountId}/message_templates?fields=name,id,status&name={model.Name}&limit=1");
+                responseStr = await resp.Content.ReadAsStringAsync();
+
+                var messageTemplates = JsonConvert.DeserializeObject<MessageTemplateListResponse>(responseStr);
+                if (messageTemplates != null && messageTemplates.data != null && messageTemplates.data.Any())
+                    messageTemplateId = messageTemplates.data[0].id;
+
+                var template = new CreateMessageTemplateRequestModel
+                {
+                    name = model.Name.Replace(" ", "_").Trim(),
+                    category = model.Category.Trim(),
+                    language = model.LanguageCode.Trim(),
+                    allow_category_change = false
+                };
+
+                //Add Body
+                if (model.Body != null && !String.IsNullOrWhiteSpace(model.Body.Text))
+                {
+                    dynamic body = new ExpandoObject();
+
+                    body.type = "BODY";
+                    body.text = model.Body.Text.Trim();
+
+                    if (model.Body.Examples.Any())
+                    {
+                        body.example = new
+                        {
+                            body_text = new List<object>
+                            {
+                                model.Body.Examples
+                            }
+                        };
+                    }
+
+                    template.components.Add(body);
+                }
+
+                if (model.Cards.Any())
+                {
+                    dynamic cardComponent = new ExpandoObject();
+                    cardComponent.type = "carousel";
+                    cardComponent.cards = new List<dynamic>();
+
+                    foreach (var card in model.Cards)
+                    {
+                        dynamic cardObj = new ExpandoObject();
+                        cardObj.components = new List<dynamic>();
+
+                        //Add Header
+                        if (card.Header != null)
+                        {
+                            card.Header.Format = card.Header.Format.Trim().ToUpper();
+                            dynamic header = new ExpandoObject();
+                            header.type = "HEADER";
+                            header.format = card.Header.Format;
+
+                            if (card.Header.Format == TemplateHeaderFormatTypeModel.TEXT)
+                            {
+                                header.text = card.Header.Text;
+
+                                if (!String.IsNullOrWhiteSpace(card.Header.Example))
+                                {
+                                    header.example = new
+                                    {
+                                        header_text = new List<string> { card.Header.Example.Trim() }
+                                    };
+                                }
+                            }
+
+                            if (card.Header.Format == TemplateHeaderFormatTypeModel.IMAGE
+                                || card.Header.Format == TemplateHeaderFormatTypeModel.VIDEO
+                                || card.Header.Format == TemplateHeaderFormatTypeModel.DOCUMENT)
+                            {
+                                var fileHandleId = await UploadMediaAsset(senderNameInfo.PhoneNumberId, senderNameInfo.AccessToken, senderNameInfo.AppId, card.Header.MediaUrl);
+
+                                if (String.IsNullOrWhiteSpace(fileHandleId))
+                                {
+                                    return new ApiResult
+                                    {
+                                        StatusCode = 404,
+                                        Message = $"Cannot uploaded provided header media with url {card.Header.MediaUrl}"
+                                    };
+                                }
+
+                                header.example = new
+                                {
+                                    header_handle = new List<string>
+                                    {
+                                        fileHandleId
+                                    }
+                                };
+                            }
+
+                            cardObj.components.Add(header);
+                        }
+
+                        //Add Body
+                        if (card.Body != null && !String.IsNullOrWhiteSpace(card.Body.Text))
+                        {
+                            dynamic body = new ExpandoObject();
+
+                            body.type = "BODY";
+                            body.text = card.Body.Text.Trim();
+
+                            if (card.Body.Examples.Any())
+                            {
+                                body.example = new
+                                {
+                                    body_text = new List<object>
+                                    {
+                                        card.Body.Examples
+                                    }
+                                };
+                            }
+
+                            cardObj.components.Add(body);
+                        }
+
+                        //Add Buttons
+                        if (card.Buttons.Any())
+                        {
+                            dynamic buttons = new ExpandoObject();
+                            buttons.type = "BUTTONS";
+                            buttons.buttons = new List<dynamic>();
+
+                            foreach (var button in card.Buttons)
+                            {
+                                button.Type = button.Type.Trim().ToUpper();
+                                if (button.Type == TemplateButtonTypeModel.QUICK_REPLY && !String.IsNullOrWhiteSpace(button.Text))
+                                {
+                                    dynamic buttonObj = new ExpandoObject();
+
+                                    buttonObj.type = TemplateButtonTypeModel.QUICK_REPLY;
+                                    buttonObj.text = button.Text.Trim();
+
+                                    buttons.buttons.Add(buttonObj);
+                                }
+                                else if (button.Type == TemplateButtonTypeModel.PHONE_NUMBER
+                                    && !String.IsNullOrWhiteSpace(button.Text)
+                                    && !String.IsNullOrWhiteSpace(button.PhoneNumber))
+                                {
+                                    dynamic buttonObj = new ExpandoObject();
+
+                                    buttonObj.type = TemplateButtonTypeModel.PHONE_NUMBER;
+                                    buttonObj.text = button.Text.Trim();
+                                    buttonObj.phone_number = button.PhoneNumber.Trim();
+
+                                    buttons.buttons.Add(buttonObj);
+                                }
+                                else if (button.Type == TemplateButtonTypeModel.URL
+                                    && !String.IsNullOrWhiteSpace(button.Text)
+                                    && !String.IsNullOrWhiteSpace(button.Url))
+                                {
+                                    dynamic buttonObj = new ExpandoObject();
+
+                                    buttonObj.type = TemplateButtonTypeModel.URL;
+                                    buttonObj.text = button.Text.Trim();
+                                    buttonObj.url = button.Url.Trim();
+
+                                    if (!String.IsNullOrWhiteSpace(button.Example))
+                                    {
+                                        buttonObj.example = new List<string>
+                                        {
+                                            button.Example.Trim()
+                                        };
+                                    }
+
+                                    buttons.buttons.Add(buttonObj);
+                                }
+                            }
+
+                            cardObj.components.Add(buttons);
+                        }
+                         
+                        cardComponent.cards.Add(cardObj);
+                    }
+
+                    template.components.Add(cardComponent);
+                }
+
+                requestStr = JsonConvert.SerializeObject(template);
+
+                _logger.LogInformation("Created Message Template Request in function HandleCarouselTemplateOps with received object {object} with request {request}", JsonConvert.SerializeObject(model), requestStr);
+
+                // Send the update request   
+                if (!String.IsNullOrWhiteSpace(messageTemplateId))
+                {
+                    resp = await _httpClient.PostAsync($"/{messageTemplateId}", new StringContent(requestStr, null, "application/json"));
+                    responseStr = await resp.Content.ReadAsStringAsync();
+
+                    _logger.LogInformation("Received Update Template Message Response in function HandleCarouselTemplateOps with received object {object} with request {request} and response {response}", JsonConvert.SerializeObject(model), requestStr, responseStr);
+
+                    var updateTemplate = JsonConvert.DeserializeObject<UpdateMessageTemplateResponseModel>(responseStr);
+                    if (updateTemplate != null)
+                    {
+                        if (updateTemplate.error != null)
+                        {
+                            StringBuilder err = new StringBuilder();
+                            if (!String.IsNullOrWhiteSpace(updateTemplate.error.message))
+                                err.Append(String.Concat(updateTemplate.error.message, ","));
+                            if (!String.IsNullOrWhiteSpace(updateTemplate.error.error_user_title))
+                                err.Append(String.Concat(updateTemplate.error.error_user_title, ","));
+                            if (!String.IsNullOrWhiteSpace(updateTemplate.error.error_user_msg))
+                                err.Append(String.Concat(updateTemplate.error.error_user_msg, ","));
+
+                            return new ApiResult
+                            {
+                                StatusCode = 400,
+                                Message = err.ToString().TrimEnd(',')
+                            };
+                        }
+                        else if (updateTemplate.success) //Get template by id
+                        {
+                            var response = await _httpClient.GetAsync($"/{messageTemplateId}");
+                            var content = await response.Content.ReadAsStringAsync();
+                            var messageTemplate = JsonConvert.DeserializeObject<MessageTemplateModel>(await response.Content.ReadAsStringAsync());
+
+                            return new ApiResult
+                            {
+                                Success = true,
+                                StatusCode = 200,
+                                Message = "Template updated successfully",
+                                Result = new
+                                {
+                                    Id = messageTemplate.id,
+                                    Status = messageTemplate.status,
+                                    Category = messageTemplate.category,
+                                    Name = messageTemplate.name
+                                }
+                            };
+                        }
+                    }
+                }
+                else //Send the create request
+                {
+                    resp = await _httpClient.PostAsync($"/{senderNameInfo.BusinessAccountId}/message_templates", new StringContent(requestStr, null, "application/json"));
+                    responseStr = await resp.Content.ReadAsStringAsync();
+
+                    _logger.LogInformation("Received Create Template Message Response in function HandleCarouselTemplateOps with received object {object} with request {request} and response {response}", JsonConvert.SerializeObject(model), requestStr, responseStr);
+
+                    var createTemplate = JsonConvert.DeserializeObject<CreateMessageTemplateResponseModel>(responseStr);
+                    if (createTemplate != null)
+                    {
+                        if (createTemplate.error != null)
+                        {
+                            StringBuilder err = new StringBuilder();
+                            if (!String.IsNullOrWhiteSpace(createTemplate.error.message))
+                                err.Append(String.Concat(createTemplate.error.message, ","));
+                            if (!String.IsNullOrWhiteSpace(createTemplate.error.error_user_title))
+                                err.Append(String.Concat(createTemplate.error.error_user_title, ","));
+                            if (!String.IsNullOrWhiteSpace(createTemplate.error.error_user_msg))
+                                err.Append(String.Concat(createTemplate.error.error_user_msg, ","));
+
+                            return new ApiResult
+                            {
+                                StatusCode = 400,
+                                Message = err.ToString().TrimEnd(',')
+                            };
+                        }
+                        else //Get template by id
+                        {
+                            var response = await _httpClient.GetAsync($"/{createTemplate.id}");
+                            var content = await response.Content.ReadAsStringAsync();
+                            var messageTemplate = JsonConvert.DeserializeObject<MessageTemplateModel>(await response.Content.ReadAsStringAsync());
+
+                            return new ApiResult
+                            {
+                                Success = true,
+                                StatusCode = 200,
+                                Message = "Template created successfully",
+                                Result = new
+                                {
+                                    Id = messageTemplate.id,
+                                    Status = messageTemplate.status,
+                                    Category = messageTemplate.category,
+                                    Name = messageTemplate.name
+                                }
+                            };
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Exception occurred {exception} when executing function HandleCarouselTemplateOps with received object {object} with request {request} and response {response}", ex, JsonConvert.SerializeObject(model), requestStr, responseStr);
             }
 
             return new ApiResult

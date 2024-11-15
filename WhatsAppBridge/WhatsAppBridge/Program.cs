@@ -86,7 +86,7 @@ namespace WhatsAppBridge
             //builder.Services.AddSwaggerGen();
             builder.Services.AddSwaggerGen(c =>
             {
-                c.SwaggerDoc("v1", new OpenApiInfo { Title = "ServiceName", Version = "1" });
+                c.SwaggerDoc("v1", new OpenApiInfo { Title = "ServiceName", Version = "1" }); 
                 c.AddSecurityDefinition("ApiKey", new OpenApiSecurityScheme
                 {
                     Name = "x-api-key",

@@ -273,6 +273,88 @@ namespace WhatsAppBridge.Controllers
             var resp = await _whatsAppHandler.HandleMessageTemplateOps(model);
 
             return Ok(resp);
-        } 
+        }
+
+        [HttpPost("CarouselTemplateMessageOps")]
+        public async Task<IActionResult> CarouselTemplateMessageOps(CreateCarouselTemplateRequestDto model)
+        {
+            _logger.LogInformation("Received CarouselTemplateMessageOps request with data={data}", JsonConvert.SerializeObject(model));
+
+            if (model == null)
+            {
+                return Ok(new ApiResult
+                {
+                    Message = "Bad Request",
+                    StatusCode = StatusCodes.Status400BadRequest
+                });
+            }
+
+            if (String.IsNullOrWhiteSpace(model.ClientId))
+            {
+                return Ok(new ApiResult
+                {
+                    Message = "Client Id shouldn't be empty",
+                    StatusCode = StatusCodes.Status400BadRequest
+                });
+            }
+
+            if (String.IsNullOrWhiteSpace(model.SenderNameId))
+            {
+                return Ok(new ApiResult
+                {
+                    Message = "Sender Name Id shouldn't be empty",
+                    StatusCode = StatusCodes.Status400BadRequest
+                });
+            }
+
+            if (String.IsNullOrWhiteSpace(model.LanguageCode))
+            {
+                return Ok(new ApiResult
+                {
+                    Message = "Language code shouldn't be empty",
+                    StatusCode = StatusCodes.Status400BadRequest
+                });
+            }
+
+            if (String.IsNullOrWhiteSpace(model.Name))
+            {
+                return Ok(new ApiResult
+                {
+                    Message = "Name shouldn't be empty",
+                    StatusCode = StatusCodes.Status400BadRequest
+                });
+            }
+
+            if (String.IsNullOrWhiteSpace(model.Category))
+            {
+                return Ok(new ApiResult
+                {
+                    Message = "Category shouldn't be empty",
+                    StatusCode = StatusCodes.Status400BadRequest
+                });
+            }
+
+            if (!model.Cards.Any())
+            {
+                return Ok(new ApiResult
+                {
+                    Message = "Cards shouldn't be empty",
+                    StatusCode = StatusCodes.Status400BadRequest
+                });
+            }
+
+            if (!model.Cards.Any(x => x.Body != null && !String.IsNullOrWhiteSpace(x.Body.Text) && x.Body.Text.Length > 150))
+            {
+                return Ok(new ApiResult
+                {
+                    Message = "Cards body text shouldn't be greater than 150 characters",
+                    StatusCode = StatusCodes.Status400BadRequest
+                });
+            }
+
+            var resp = await _whatsAppHandler.HandleCarouselTemplateOps(model);
+
+            return Ok(resp);
+        }
     }
 }
