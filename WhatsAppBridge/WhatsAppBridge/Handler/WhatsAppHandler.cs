@@ -597,7 +597,7 @@ namespace WhatsAppBridge.Handler
                                     PhoneNumber = batch[j],
                                     WAId = response.bodyResponse.contacts[0].wa_id,
                                     Status = response.code,
-                                    MessageId = response.bodyResponse.messages[0].id
+                                    MessageId = response.bodyResponse.contacts[0].wa_id
                                 };
 
                                 models.Add(responseDto);
@@ -718,14 +718,14 @@ namespace WhatsAppBridge.Handler
                             response.bodyResponse = JsonConvert.DeserializeObject<BatchMessageResponseModel.BodyResponse>(response.body);
 
                             if (response.code == 200) //If success
-                            {
+                            {  
                                 var responseDto = new SendMessageResponseDto
                                 {
                                     Success = true,
                                     PhoneNumber = batch[j],
                                     WAId = response.bodyResponse.contacts[0].wa_id,
                                     Status = response.code,
-                                    MessageId = response.bodyResponse.messages[0].id
+                                    MessageId = response.bodyResponse.contacts[0].wa_id
                                 };
 
                                 models.Add(responseDto);
@@ -849,7 +849,7 @@ namespace WhatsAppBridge.Handler
                 _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {senderNameInfo.AccessToken}");
 
                 string messageTemplateId = String.Empty;
-                var resp = await _httpClient.GetAsync($"/{senderNameInfo.BusinessAccountId}/message_templates?fields=name,id,status&name={model.Name}&limit=1");
+                var resp = await _httpClient.GetAsync($"/{senderNameInfo.BusinessAccountId}/message_templates?fields=name,id,status,language&name={model.Name}&language={model.LanguageCode}&limit=1");
                 responseStr = await resp.Content.ReadAsStringAsync();
 
                 var messageTemplates = JsonConvert.DeserializeObject<MessageTemplateListResponse>(responseStr);
@@ -1126,6 +1126,7 @@ namespace WhatsAppBridge.Handler
         {
             string requestStr = String.Empty;
             string responseStr = String.Empty;
+            string fullUrl = String.Empty;
 
             try
             {
@@ -1147,7 +1148,11 @@ namespace WhatsAppBridge.Handler
                 _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {senderNameInfo.AccessToken}");
 
                 string messageTemplateId = String.Empty;
-                var resp = await _httpClient.GetAsync($"/{senderNameInfo.BusinessAccountId}/message_templates?fields=name,id,status&name={model.Name}&limit=1");
+
+
+                fullUrl = CommonHelper.GetFullUrl(baseUrl, $"/{senderNameInfo.BusinessAccountId}/message_templates?fields=name,id,status,language&name={model.Name}&language={model.LanguageCode}&limit=1");
+
+                var resp = await _httpClient.GetAsync($"/{senderNameInfo.BusinessAccountId}/message_templates?fields=name,id,status,language&name={model.Name}&language={model.LanguageCode}&limit=1");
                 responseStr = await resp.Content.ReadAsStringAsync();
 
                 var messageTemplates = JsonConvert.DeserializeObject<MessageTemplateListResponse>(responseStr);
@@ -1439,6 +1444,16 @@ namespace WhatsAppBridge.Handler
                 StatusCode = 400,
                 Message = "Something went wrong"
             };
+        }
+
+        /// <summary>
+        /// Send batch carousel messages
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
+        public async Task<ApiResult> HandleSendBatchCarouselMessage(SendMessageCarouselRequestDto model)
+        {
+            return null;
         }
 
         #endregion

@@ -397,11 +397,11 @@ namespace WhatsAppBridge.Handler
 
                     var response = await _httpClient.PostAsync($"/message/whatsappmessagereceive", new StringContent(requestStr, null, "application/json"));
 
-                    if (!response.IsSuccessStatusCode) 
-                        responseStr = String.Concat("Status code: ", response.StatusCode, " | Reason: ", response.ReasonPhrase); 
-                    else 
-                        responseStr = await response.Content.ReadAsStringAsync(); 
-                     
+                    if (!response.IsSuccessStatusCode)
+                        responseStr = String.Concat("Status code: ", response.StatusCode, " | Reason: ", response.ReasonPhrase);
+                    else
+                        responseStr = await response.Content.ReadAsStringAsync();
+
                     _logger.LogInformation("Received response when executing function MessageReceiveUpdate of Integration whatsappmessagereceive method with clientId {clientId} with url {url} and request {request} and content {content}", updateDto.client_Id, fullUrl, requestStr, responseStr);
 
                 }
@@ -415,7 +415,7 @@ namespace WhatsAppBridge.Handler
                 _logger.LogError("Exception occurred {exception} when executing function MessageReceiveUpdate with received object {object}", ex, JsonConvert.SerializeObject(updateDto));
             }
         }
-         
+
         #endregion
     }
 }
