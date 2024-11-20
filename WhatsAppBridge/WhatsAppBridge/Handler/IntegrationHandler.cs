@@ -169,159 +169,162 @@ namespace WhatsAppBridge.Handler
                     SubCategory = messageTemplate.sub_category
                 };
 
-                foreach (var component in messageTemplate.components)
-                {
-                    if (component.type == TemplateComponentTypeModel.HEADER)
-                    {
-                        templateDto.Header = new MessageTemplateDto.HeaderComponent
-                        {
-                            Format = component.format
-                        };
+                //foreach (var component in messageTemplate.components)
+                //{
+                //    if (component.type == TemplateComponentTypeModel.HEADER)
+                //    {
+                //        templateDto.Header = new MessageTemplateDto.HeaderComponent
+                //        {
+                //            Format = component.format
+                //        };
 
-                        if (templateDto.Header.Format == TemplateHeaderFormatTypeModel.TEXT)
-                        {
-                            templateDto.Header.Text = component.text;
+                //        if (templateDto.Header.Format == TemplateHeaderFormatTypeModel.TEXT)
+                //        {
+                //            templateDto.Header.Text = component.text;
 
-                            if (component.example != null && component.example.header_text != null)
-                            {
-                                List<string> examples = JsonConvert.DeserializeObject<List<string>>(JsonConvert.SerializeObject(component.example.header_text));
-                                templateDto.Header.TextCount = examples.Count;
+                //            if (component.example != null && component.example.header_text != null)
+                //            {
+                //                List<string> examples = JsonConvert.DeserializeObject<List<string>>(JsonConvert.SerializeObject(component.example.header_text));
+                //                templateDto.Header.TextCount = examples.Count;
 
-                                for (int i = 0; i < examples.Count; i++)
-                                {
-                                    templateDto.Header.Values.Add(new MessageTemplateDto.KeyValue
-                                    {
-                                        index = i + 1,
-                                        value = examples[i]
-                                    });
-                                }
-                            }
-                        }
-                        else if (templateDto.Header.Format == TemplateHeaderFormatTypeModel.IMAGE)
-                        {
-                            templateDto.Header.Text = component.text;
+                //                for (int i = 0; i < examples.Count; i++)
+                //                {
+                //                    templateDto.Header.Values.Add(new MessageTemplateDto.KeyValue
+                //                    {
+                //                        index = i + 1,
+                //                        value = examples[i]
+                //                    });
+                //                }
+                //            }
+                //        }
+                //        else if (templateDto.Header.Format == TemplateHeaderFormatTypeModel.IMAGE)
+                //        {
+                //            templateDto.Header.Text = component.text;
 
-                            if (component.example != null && component.example.header_handle != null)
-                            {
-                                List<string> examples = JsonConvert.DeserializeObject<List<string>>(JsonConvert.SerializeObject(component.example.header_handle));
-                                for (int i = 0; i < examples.Count; i++)
-                                {
-                                    templateDto.Header.Values.Add(new MessageTemplateDto.KeyValue
-                                    {
-                                        index = i + 1,
-                                        value = examples[i]
-                                    });
-                                }
-                            }
-                        }
-                        else if (templateDto.Header.Format == TemplateHeaderFormatTypeModel.DOCUMENT)
-                        {
-                            templateDto.Header.Text = component.text;
+                //            if (component.example != null && component.example.header_handle != null)
+                //            {
+                //                List<string> examples = JsonConvert.DeserializeObject<List<string>>(JsonConvert.SerializeObject(component.example.header_handle));
+                //                for (int i = 0; i < examples.Count; i++)
+                //                {
+                //                    templateDto.Header.Values.Add(new MessageTemplateDto.KeyValue
+                //                    {
+                //                        index = i + 1,
+                //                        value = examples[i]
+                //                    });
+                //                }
+                //            }
+                //        }
+                //        else if (templateDto.Header.Format == TemplateHeaderFormatTypeModel.DOCUMENT)
+                //        {
+                //            templateDto.Header.Text = component.text;
 
-                            if (component.example != null && component.example.header_handle != null)
-                            {
-                                List<string> examples = JsonConvert.DeserializeObject<List<string>>(JsonConvert.SerializeObject(component.example.header_handle));
-                                for (int i = 0; i < examples.Count; i++)
-                                {
-                                    templateDto.Header.Values.Add(new MessageTemplateDto.KeyValue
-                                    {
-                                        index = i + 1,
-                                        value = examples[i]
-                                    });
-                                }
-                            }
-                        }
-                    }
-                    else if (component.type == TemplateComponentTypeModel.BODY)
-                    {
-                        templateDto.Body = new MessageTemplateDto.BodyComponent
-                        {
-                            Text = component.text
-                        };
+                //            if (component.example != null && component.example.header_handle != null)
+                //            {
+                //                List<string> examples = JsonConvert.DeserializeObject<List<string>>(JsonConvert.SerializeObject(component.example.header_handle));
+                //                for (int i = 0; i < examples.Count; i++)
+                //                {
+                //                    templateDto.Header.Values.Add(new MessageTemplateDto.KeyValue
+                //                    {
+                //                        index = i + 1,
+                //                        value = examples[i]
+                //                    });
+                //                }
+                //            }
+                //        }
+                //    }
+                //    else if (component.type == TemplateComponentTypeModel.BODY)
+                //    {
+                //        templateDto.Body = new MessageTemplateDto.BodyComponent
+                //        {
+                //            Text = component.text
+                //        };
 
-                        if (component.example != null && component.example.body_text != null)
-                        {
-                            var body_text = JsonConvert.DeserializeObject<List<object>>(JsonConvert.SerializeObject(component.example.body_text));
+                //        if (component.example != null && component.example.body_text != null)
+                //        {
+                //            var body_text = JsonConvert.DeserializeObject<List<object>>(JsonConvert.SerializeObject(component.example.body_text));
 
-                            List<string> examples = JsonConvert.DeserializeObject<List<string>>(JsonConvert.SerializeObject(body_text[0]));
-                            for (int i = 0; i < examples.Count; i++)
-                            {
-                                templateDto.Body.Values.Add(new MessageTemplateDto.KeyValue
-                                {
-                                    index = i + 1,
-                                    value = examples[i]
-                                });
-                            }
+                //            List<string> examples = JsonConvert.DeserializeObject<List<string>>(JsonConvert.SerializeObject(body_text[0]));
+                //            for (int i = 0; i < examples.Count; i++)
+                //            {
+                //                templateDto.Body.Values.Add(new MessageTemplateDto.KeyValue
+                //                {
+                //                    index = i + 1,
+                //                    value = examples[i]
+                //                });
+                //            }
 
-                            templateDto.Body.TextCount = examples.Count;
-                        }
-                    }
-                    else if (component.type == TemplateComponentTypeModel.FOOTER)
-                    {
-                        templateDto.Footer = new MessageTemplateDto.FooterComponent
-                        {
-                            Text = component.text
-                        };
-                    }
-                    else if (component.type == TemplateComponentTypeModel.BUTTONS)
-                    {
-                        int buttonIndex = 1;
-                        foreach (var button in component.buttons)
-                        {
-                            if (button.type == TemplateButtonTypeModel.QUICK_REPLY)
-                            {
-                                buttonIndex = 1;
-                                templateDto.Buttons.Add(new MessageTemplateDto.ButtonComponent
-                                {
-                                    Type = button.type,
-                                    Text = button.text,
-                                    Index = buttonIndex
-                                });
+                //            templateDto.Body.TextCount = examples.Count;
+                //        }
+                //    }
+                //    else if (component.type == TemplateComponentTypeModel.FOOTER)
+                //    {
+                //        templateDto.Footer = new MessageTemplateDto.FooterComponent
+                //        {
+                //            Text = component.text
+                //        };
+                //    }
+                //    else if (component.type == TemplateComponentTypeModel.BUTTONS)
+                //    {
+                //        int buttonIndex = 0;
+                //        foreach (var button in component.buttons)
+                //        {
+                //            if (button.type == TemplateButtonTypeModel.QUICK_REPLY)
+                //            {
+                //                templateDto.Buttons.Add(new MessageTemplateDto.ButtonComponent
+                //                {
+                //                    Type = button.type,
+                //                    Text = button.text,
+                //                    Index = buttonIndex
+                //                });
 
-                                buttonIndex++;
-                            }
-                            else if (button.type == TemplateButtonTypeModel.URL)
-                            {
-                                var buttonComp = new MessageTemplateDto.ButtonComponent
-                                {
-                                    Type = button.type,
-                                    Text = button.text,
-                                    Url = button.url,
-                                    Index = buttonIndex++
-                                };
+                //                buttonIndex++;
+                //            }
+                //            else if (button.type == TemplateButtonTypeModel.URL)
+                //            {
+                //                var buttonComp = new MessageTemplateDto.ButtonComponent
+                //                {
+                //                    Type = button.type,
+                //                    Text = button.text,
+                //                    Url = button.url,
+                //                    Index = buttonIndex
+                //                };
 
-                                if (button.example != null)
-                                {
-                                    List<string> examples = JsonConvert.DeserializeObject<List<string>>(JsonConvert.SerializeObject(button.example));
-                                    for (int i = 0; i < examples.Count; i++)
-                                    {
-                                        buttonComp.Values.Add(new MessageTemplateDto.KeyValue
-                                        {
-                                            index = i + 1,
-                                            value = examples[i]
-                                        });
-                                    }
+                //                if (button.example != null)
+                //                {
+                //                    List<string> examples = JsonConvert.DeserializeObject<List<string>>(JsonConvert.SerializeObject(button.example));
+                //                    for (int i = 0; i < examples.Count; i++)
+                //                    {
+                //                        buttonComp.Values.Add(new MessageTemplateDto.KeyValue
+                //                        {
+                //                            index = i + 1,
+                //                            value = examples[i]
+                //                        });
+                //                    }
 
-                                    buttonComp.TextCount = examples.Count;
-                                }
+                //                    buttonComp.TextCount = examples.Count;
+                //                }
 
-                                templateDto.Buttons.Add(buttonComp);
-                            }
-                            else if (button.type == TemplateButtonTypeModel.PHONE_NUMBER)
-                            {
-                                var buttonComp = new MessageTemplateDto.ButtonComponent
-                                {
-                                    Type = button.type,
-                                    Text = button.text,
-                                    PhoneNumber = button.phone_number,
-                                    Index = buttonIndex++
-                                };
+                //                buttonIndex++;
 
-                                templateDto.Buttons.Add(buttonComp);
-                            }
-                        }
-                    }
-                }
+                //                templateDto.Buttons.Add(buttonComp);
+                //            }
+                //            else if (button.type == TemplateButtonTypeModel.PHONE_NUMBER)
+                //            {
+                //                var buttonComp = new MessageTemplateDto.ButtonComponent
+                //                {
+                //                    Type = button.type,
+                //                    Text = button.text,
+                //                    PhoneNumber = button.phone_number,
+                //                    Index = buttonIndex
+                //                };
+
+                //                buttonIndex++;
+
+                //                templateDto.Buttons.Add(buttonComp);
+                //            }
+                //        }
+                //    }
+                //}
 
                 if (sendRequestToIntegration)
                 {
