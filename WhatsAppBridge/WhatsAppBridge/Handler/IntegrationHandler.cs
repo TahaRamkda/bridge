@@ -127,14 +127,7 @@ namespace WhatsAppBridge.Handler
 
                 try
                 {
-                    var result = new ApiResult
-                    {
-                        StatusCode = 200,
-                        Success = true,
-                        Result = updateDto
-                    };
-
-                    requestStr = JsonConvert.SerializeObject(result);
+                    requestStr = JsonConvert.SerializeObject(updateDto);
                     fullUrl = CommonHelper.GetFullUrl(baseUrl, $"/message/whatsappmessagestatusupdate");
 
                     _logger.LogInformation("Executing function SendMessageStatusUpdate Calling Integration whatsappmessagestatusupdate method with clientId {clientId} with url {url} and request {request}", updateDto.client_Id, fullUrl, requestStr);

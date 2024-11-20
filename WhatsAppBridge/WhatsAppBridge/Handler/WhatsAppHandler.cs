@@ -594,10 +594,10 @@ namespace WhatsAppBridge.Handler
                                 var responseDto = new SendMessageResponseDto
                                 {
                                     Success = true,
-                                    PhoneNumber = batch[j],
-                                    WAId = response.bodyResponse.contacts[0].wa_id,
+                                    PhoneNumber = response.bodyResponse.contacts[0].wa_id,
+                                    WAId = response.bodyResponse.messages[0].id,
                                     Status = response.code,
-                                    MessageId = response.bodyResponse.contacts[0].wa_id
+                                    MessageId = response.bodyResponse.messages[0].id
                                 };
 
                                 models.Add(responseDto);
@@ -722,10 +722,10 @@ namespace WhatsAppBridge.Handler
                                 var responseDto = new SendMessageResponseDto
                                 {
                                     Success = true,
-                                    PhoneNumber = batch[j],
-                                    WAId = response.bodyResponse.contacts[0].wa_id,
+                                    PhoneNumber = response.bodyResponse.contacts[0].wa_id,
+                                    WAId = response.bodyResponse.messages[0].id,
                                     Status = response.code,
-                                    MessageId = response.bodyResponse.contacts[0].wa_id
+                                    MessageId = response.bodyResponse.messages[0].id
                                 };
 
                                 models.Add(responseDto);
