@@ -12,6 +12,7 @@
         public Text text { get; set; }
         public Image image { get; set; }
         public Document document { get; set; }
+        public Video video { get; set; }
         public PhoneNumber phone_number_Id { get; set; }
 
         public class PhoneNumber
@@ -35,6 +36,7 @@
         public class Image
         {
             public string id { get; set; }
+            public string caption { get; set; }
             public string mime_type { get; set; }
             public string sha256 { get; set; }
         }
@@ -42,9 +44,18 @@
         public class Document
         {
             public string id { get; set; }
+            public string caption { get; set; }
             public string mime_type { get; set; }
             public string sha256 { get; set; }
             public string filename { get; set; }
+        }
+
+        public class Video
+        {
+            public string id { get; set; }
+            public string caption { get; set; }
+            public string mime_type { get; set; }
+            public string sha256 { get; set; }
         }
 
         public class Text

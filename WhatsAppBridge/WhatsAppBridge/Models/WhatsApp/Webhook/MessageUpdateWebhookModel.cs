@@ -107,6 +107,7 @@ namespace WhatsAppBridge.Models.WhatsApp.Webhook
             public Text text { get; set; }
             public Button button { get; set; }
             public Image image { get; set; }
+            public Video video { get; set; }
             public Document document { get; set; }
 
             public class Text
@@ -119,6 +120,15 @@ namespace WhatsAppBridge.Models.WhatsApp.Webhook
                 public string mime_type { get; set; }
                 public string sha256 { get; set; }
                 public string id { get; set; }
+                public string caption { get; set; }
+            }
+
+            public class Video
+            {
+                public string mime_type { get; set; }
+                public string sha256 { get; set; }
+                public string id { get; set; }
+                public string caption { get; set; }
             }
 
             public class Button
@@ -133,8 +143,8 @@ namespace WhatsAppBridge.Models.WhatsApp.Webhook
                 public string mime_type { get; set; }
                 public string sha256 { get; set; }
                 public string id { get; set; }
-            }
-
+                public string caption { get; set; }
+            } 
         }
     }
 }

@@ -7,6 +7,7 @@ using Microsoft.OpenApi.Models;
 using Serilog;
 using System.Text;
 using WhatsAppBridge.Handler;
+using WhatsAppBridge.Helpers;
 using WhatsAppBridge.Middleware;
 using WhatsAppBridge.Models;
 using WhatsAppBridge.Settings;
@@ -86,6 +87,9 @@ namespace WhatsAppBridge
             //builder.Services.AddSwaggerGen();
             builder.Services.AddSwaggerGen(c =>
             {
+                var schemaHelper = new SwashbuckleSchemaHelper();
+                c.CustomSchemaIds(type => schemaHelper.GetSchemaId(type));
+
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "ServiceName", Version = "1" }); 
                 c.AddSecurityDefinition("ApiKey", new OpenApiSecurityScheme
                 {
