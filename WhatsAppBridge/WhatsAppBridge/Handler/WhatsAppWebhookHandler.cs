@@ -183,10 +183,8 @@ namespace WhatsAppBridge.Handler
                                 mime_type = message.image.mime_type,
                                 sha256 = message.image.sha256
                             };
-                        }
+                        }  
 
-<<<<<<< HEAD
-=======
                         if (message.video != null)
                         {
                             updateDto.video = new MessageReceiveDto.Video
@@ -197,8 +195,7 @@ namespace WhatsAppBridge.Handler
                                 sha256 = message.video.sha256
                             };
                         }
-
->>>>>>> 418c51ac2d6d1dcdacc0d0acf18b94ab9b425a26
+                         
                         if (message.document != null)
                         {
                             updateDto.document = new MessageReceiveDto.Document

@@ -145,13 +145,14 @@ namespace WhatsAppBridge.Models.WhatsApp.Webhook
                 public string mime_type { get; set; }
                 public string sha256 { get; set; }
                 public string id { get; set; }
-<<<<<<< HEAD
+                public string caption { get; set; }
+
             }
 
             public class Location
             {
                 public string latitude { get; set; }
-                public string longitude { get; set; } 
+                public string longitude { get; set; }
             }
 
             public class Sticker
@@ -161,11 +162,8 @@ namespace WhatsAppBridge.Models.WhatsApp.Webhook
                 public string id { get; set; }
                 public string caption { get; set; }
                 public bool animated { get; set; }
+
             }
-=======
-                public string caption { get; set; }
-            } 
->>>>>>> 418c51ac2d6d1dcdacc0d0acf18b94ab9b425a26
         }
     }
 }

@@ -13,13 +13,11 @@
         public Text text { get; set; }
         public Image image { get; set; }
         public Document document { get; set; }
-<<<<<<< HEAD
+ 
         public Location location { get; set; }
         public Sticker sticker { get; set; }
-=======
-        public Video video { get; set; }
-        public PhoneNumber phone_number_Id { get; set; }
->>>>>>> 418c51ac2d6d1dcdacc0d0acf18b94ab9b425a26
+ 
+        public Video video { get; set; } 
 
         public class PhoneNumber
         {
