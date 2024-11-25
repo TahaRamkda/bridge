@@ -183,7 +183,6 @@ namespace WhatsAppBridge.Handler
                             };
                         }
 
-
                         if (message.document != null)
                         {
                             updateDto.document = new MessageReceiveDto.Document
@@ -192,6 +191,27 @@ namespace WhatsAppBridge.Handler
                                 mime_type = message.document.mime_type,
                                 sha256 = message.document.sha256,
                                 filename = message.document.filename
+                            };
+                        }
+
+                        if (message.location != null)
+                        {
+                            updateDto.location = new MessageReceiveDto.Location
+                            {
+                                latitude = message.location.latitude,
+                                longitude = message.location.longitude
+                            };
+                        }
+
+                        if (message.sticker != null)
+                        {
+                            updateDto.sticker = new MessageReceiveDto.Sticker
+                            {
+                                id = message.sticker.id,
+                                mime_type = message.sticker.mime_type,
+                                sha256 = message.sticker.sha256,
+                                animated = message.sticker.animated,
+                                caption = message.sticker.caption
                             };
                         }
 

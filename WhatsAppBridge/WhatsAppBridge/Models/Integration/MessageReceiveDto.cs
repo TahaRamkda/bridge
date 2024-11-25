@@ -7,12 +7,14 @@
         public string update_dateTime { get; set; }
         public string from { get; set; }
         public string type { get; set; }
+        public PhoneNumber phone_number_Id { get; set; }
         public Context context { get; set; }
         public Button button { get; set; }
         public Text text { get; set; }
         public Image image { get; set; }
         public Document document { get; set; }
-        public PhoneNumber phone_number_Id { get; set; }
+        public Location location { get; set; }
+        public Sticker sticker { get; set; }
 
         public class PhoneNumber
         {
@@ -50,6 +52,21 @@
         public class Text
         {
             public string body { get; set; }
+        }
+         
+        public class Location
+        {
+            public string latitude { get; set; }
+            public string longitude { get; set; }
+        }
+
+        public class Sticker
+        {
+            public string mime_type { get; set; }
+            public string sha256 { get; set; }
+            public string id { get; set; }
+            public string caption { get; set; }
+            public bool animated { get; set; }
         }
     }
 }
