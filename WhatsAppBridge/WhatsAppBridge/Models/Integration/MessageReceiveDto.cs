@@ -13,8 +13,13 @@
         public Text text { get; set; }
         public Image image { get; set; }
         public Document document { get; set; }
+<<<<<<< HEAD
         public Location location { get; set; }
         public Sticker sticker { get; set; }
+=======
+        public Video video { get; set; }
+        public PhoneNumber phone_number_Id { get; set; }
+>>>>>>> 418c51ac2d6d1dcdacc0d0acf18b94ab9b425a26
 
         public class PhoneNumber
         {
@@ -37,6 +42,7 @@
         public class Image
         {
             public string id { get; set; }
+            public string caption { get; set; }
             public string mime_type { get; set; }
             public string sha256 { get; set; }
         }
@@ -44,9 +50,18 @@
         public class Document
         {
             public string id { get; set; }
+            public string caption { get; set; }
             public string mime_type { get; set; }
             public string sha256 { get; set; }
             public string filename { get; set; }
+        }
+
+        public class Video
+        {
+            public string id { get; set; }
+            public string caption { get; set; }
+            public string mime_type { get; set; }
+            public string sha256 { get; set; }
         }
 
         public class Text

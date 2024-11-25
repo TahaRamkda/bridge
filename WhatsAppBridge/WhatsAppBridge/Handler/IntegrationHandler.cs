@@ -50,9 +50,9 @@ namespace WhatsAppBridge.Handler
                 _logger.LogInformation("Executing function GetClientInformation Calling Integration GetClientAccessToken method with clientId {clientId}", clientId);
 
                 requestStr = clientId;
-                fullUrl = CommonHelper.GetFullUrl(baseUrl, $"/clients/getclientinformation?client_Id={clientId}");
+                fullUrl = CommonHelper.GetFullUrl(baseUrl, $"/clients/getclientinformation?clientId={clientId}");
 
-                var response = await _httpClient.GetAsync($"/clients/getclientinformation?client_Id={clientId}");
+                var response = await _httpClient.GetAsync($"/clients/getclientinformation?clientId={clientId}");
                 responseStr = await response.Content.ReadAsStringAsync();
 
                 _logger.LogInformation("Received response when executing function GetClientInformation of Integration GetClientInformation method with clientId {clientId} with url {url} and request {request} and content {content}", clientId, fullUrl, requestStr, responseStr);
@@ -89,9 +89,9 @@ namespace WhatsAppBridge.Handler
                 _logger.LogInformation("Executing function GetSenderInformation Calling Integration GetClientAccessToken method with clientId {clientId} and senderNameId {senderNameId}", clientId, senderNameId);
 
                 requestStr = clientId;
-                fullUrl = CommonHelper.GetFullUrl(baseUrl, $"/sendernames/getsendernameinformation?client_Id={clientId}&sender_Name_Id={senderNameId}");
+                fullUrl = CommonHelper.GetFullUrl(baseUrl, $"/sendernames/getsendernameinformation?clientId={clientId}&senderNameId={senderNameId}");
 
-                var response = await _httpClient.GetAsync($"/sendernames/getsendernameinformation?client_Id={clientId}&sender_Name_Id={senderNameId}");
+                var response = await _httpClient.GetAsync($"/sendernames/getsendernameinformation?clientId={clientId}&senderNameId={senderNameId}");
                 responseStr = await response.Content.ReadAsStringAsync();
 
                 _logger.LogInformation("Received response when executing function GetSenderInformation of Integration GetClientInformation method with clientId {clientId} and senderNameId {senderNameId} with url {url} and request {request} and content {content}", clientId, senderNameId, fullUrl, requestStr, responseStr);
@@ -128,11 +128,11 @@ namespace WhatsAppBridge.Handler
                 try
                 {
                     requestStr = JsonConvert.SerializeObject(updateDto);
-                    fullUrl = CommonHelper.GetFullUrl(baseUrl, $"/message/whatsappmessagestatusupdate");
+                    fullUrl = CommonHelper.GetFullUrl(baseUrl, $"/bridge/whatsappmessagestatusupdate");
 
                     _logger.LogInformation("Executing function SendMessageStatusUpdate Calling Integration whatsappmessagestatusupdate method with clientId {clientId} with url {url} and request {request}", updateDto.client_Id, fullUrl, requestStr);
 
-                    var response = await _httpClient.PostAsync($"/message/whatsappmessagestatusupdate", new StringContent(requestStr, null, "application/json"));
+                    var response = await _httpClient.PostAsync($"/bridge/whatsappmessagestatusupdate", new StringContent(requestStr, null, "application/json"));
                     if (!response.IsSuccessStatusCode)
                         responseStr = String.Concat("Status code: ", response.StatusCode, " | Reason: ", response.ReasonPhrase);
                     else
@@ -342,11 +342,11 @@ namespace WhatsAppBridge.Handler
                         };
 
                         requestStr = JsonConvert.SerializeObject(result);
-                        fullUrl = CommonHelper.GetFullUrl(baseUrl, $"/templates/templatesync");
+                        fullUrl = CommonHelper.GetFullUrl(baseUrl, $"/bridge/templatesync");
 
                         _logger.LogInformation("Executing function SendMessageTemplateStatusUpdate Calling Integration TemplatePost method with templateId {templateId } with url {url} and request {request}", templateDto.Id, fullUrl, requestStr);
 
-                        var response = await _httpClient.PostAsync($"/templates/templatesync", new StringContent(requestStr, null, "application/json"));
+                        var response = await _httpClient.PostAsync($"/bridge/templatesync", new StringContent(requestStr, null, "application/json"));
                         responseStr = await response.Content.ReadAsStringAsync();
 
                         _logger.LogInformation("Received response when executing function SendMessageTemplateStatusUpdate of Integration TemplatePost method with templateId {templateId } with url {url} and request {request} and content {content}", templateDto.Id, fullUrl, requestStr, responseStr);
@@ -387,11 +387,11 @@ namespace WhatsAppBridge.Handler
                     };
 
                     requestStr = JsonConvert.SerializeObject(result);
-                    fullUrl = CommonHelper.GetFullUrl(baseUrl, $"/message/whatsappmessagereceive");
+                    fullUrl = CommonHelper.GetFullUrl(baseUrl, $"/bridge/whatsappmessagereceive");
 
                     _logger.LogInformation("Executing function MessageReceiveUpdate Calling Integration whatsappmessagereceive method with clientId {clientId} with url {url} and request {request}", updateDto.client_Id, fullUrl, requestStr);
 
-                    var response = await _httpClient.PostAsync($"/message/whatsappmessagereceive", new StringContent(requestStr, null, "application/json"));
+                    var response = await _httpClient.PostAsync($"/bridge/whatsappmessagereceive", new StringContent(requestStr, null, "application/json"));
 
                     if (!response.IsSuccessStatusCode)
                         responseStr = String.Concat("Status code: ", response.StatusCode, " | Reason: ", response.ReasonPhrase);

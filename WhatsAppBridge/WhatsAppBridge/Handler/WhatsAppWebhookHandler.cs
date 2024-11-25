@@ -177,17 +177,34 @@ namespace WhatsAppBridge.Handler
                         {
                             updateDto.image = new MessageReceiveDto.Image
                             {
+
                                 id = message.image.id,
+                                caption = message.image.caption,
                                 mime_type = message.image.mime_type,
                                 sha256 = message.image.sha256
                             };
                         }
 
+<<<<<<< HEAD
+=======
+                        if (message.video != null)
+                        {
+                            updateDto.video = new MessageReceiveDto.Video
+                            {
+                                id = message.video.id,
+                                caption = message.video.caption,
+                                mime_type = message.video.mime_type,
+                                sha256 = message.video.sha256
+                            };
+                        }
+
+>>>>>>> 418c51ac2d6d1dcdacc0d0acf18b94ab9b425a26
                         if (message.document != null)
                         {
                             updateDto.document = new MessageReceiveDto.Document
                             {
                                 id = message.document.id,
+                                caption = message.document.caption,
                                 mime_type = message.document.mime_type,
                                 sha256 = message.document.sha256,
                                 filename = message.document.filename
