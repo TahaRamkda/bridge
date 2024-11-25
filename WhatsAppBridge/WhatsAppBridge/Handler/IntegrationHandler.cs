@@ -379,12 +379,7 @@ namespace WhatsAppBridge.Handler
 
                 try
                 {
-                    var result = new ApiResult
-                    {
-                        StatusCode = 200,
-                        Success = true,
-                        Result = updateDto
-                    };
+                    var result = updateDto;
 
                     requestStr = JsonConvert.SerializeObject(result);
                     fullUrl = CommonHelper.GetFullUrl(baseUrl, $"/bridge/whatsappmessagereceive");
