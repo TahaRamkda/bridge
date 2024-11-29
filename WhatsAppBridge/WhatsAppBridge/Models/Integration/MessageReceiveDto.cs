@@ -15,10 +15,10 @@
         public Document document { get; set; }
  
         public Location location { get; set; }
-        public Sticker sticker { get; set; }
- 
-        public Video video { get; set; } 
-
+        public Sticker sticker { get; set; } 
+        public Video video { get; set; }
+        public Interactive interactive { get; set; }
+        
         public class PhoneNumber
         {
             public string display_phone_number { get; set; }
@@ -80,6 +80,24 @@
             public string id { get; set; }
             public string caption { get; set; }
             public bool animated { get; set; }
+        }
+
+        public class Interactive
+        {
+            public string type { get; set; }
+            public ButtonReply button_reply { get; set; }
+            public ListReply list_reply { get; set; }
+            public class ButtonReply
+            {
+                public string id { get; set; }
+                public string title { get; set; }
+            }
+
+            public class ListReply
+            {
+                public string id { get; set; }
+                public string title { get; set; }
+            }
         }
     }
 }

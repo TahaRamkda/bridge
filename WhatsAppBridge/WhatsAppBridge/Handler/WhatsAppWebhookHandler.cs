@@ -183,7 +183,7 @@ namespace WhatsAppBridge.Handler
                                 mime_type = message.image.mime_type,
                                 sha256 = message.image.sha256
                             };
-                        }  
+                        }
 
                         if (message.video != null)
                         {
@@ -195,7 +195,7 @@ namespace WhatsAppBridge.Handler
                                 sha256 = message.video.sha256
                             };
                         }
-                         
+
                         if (message.document != null)
                         {
                             updateDto.document = new MessageReceiveDto.Document
@@ -227,6 +227,27 @@ namespace WhatsAppBridge.Handler
                                 animated = message.sticker.animated,
                                 caption = message.sticker.caption
                             };
+                        }
+
+                        if (message.interactive != null)
+                        {
+                            if (message.interactive.list_reply != null)
+                            {
+                                message.interactive.list_reply = new Message.Interactive.ListReply
+                                {
+                                    id = message.interactive.list_reply.id,
+                                    title = message.interactive.list_reply.title
+                                };
+                            }
+
+                            if (message.interactive.button_reply != null)
+                            {
+                                message.interactive.button_reply = new Message.Interactive.ButtonReply
+                                {
+                                    id = message.interactive.button_reply.id,
+                                    title = message.interactive.button_reply.title
+                                };
+                            }
                         }
 
                         await _integrationHandler.MessageReceiveUpdate(updateDto);

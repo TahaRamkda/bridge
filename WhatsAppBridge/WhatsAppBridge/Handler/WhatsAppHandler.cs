@@ -3,9 +3,7 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Dynamic;
-using System.IO;
 using System.Net.Http.Headers;
-using System.Reflection.PortableExecutable;
 using System.Text;
 using WhatsAppBridge.Helpers;
 using WhatsAppBridge.Models;
@@ -13,7 +11,6 @@ using WhatsAppBridge.Models.Integration;
 using WhatsAppBridge.Models.WhatsApp;
 using WhatsAppBridge.Models.WhatsApp.Types;
 using WhatsAppBridge.Settings;
-using static WhatsAppBridge.Models.WhatsApp.BatchMessageRequestModel;
 
 namespace WhatsAppBridge.Handler
 {
@@ -281,6 +278,165 @@ namespace WhatsAppBridge.Handler
             }
 
             return template;
+        }
+
+        private SendInteractiveMessageModel GetInteractiveMessageContent(SendInteractiveMessageRequestDto model)
+        {
+            var interactive = new SendInteractiveMessageModel
+            {
+                messaging_product = "whatsapp",
+                to = String.Empty,
+                recipient_type = "individual",
+                type = "interactive",
+                interactive = new ExpandoObject()
+            };
+
+            //HEADER
+            if (model.Header != null && model.Header.Format != TemplateHeaderFormatTypeModel.NONE)
+            {
+                model.Header.Format = model.Header.Format.ToUpper();
+
+                //HEADER TYPE COMPONENT
+                dynamic header = new ExpandoObject();
+                if (model.Header.Format == TemplateHeaderFormatTypeModel.TEXT)
+                {
+                    header.type = TemplateHeaderFormatTypeModel.TEXT;
+                    header.text = model.Header.Value;
+                }
+                else if (model.Header.Format == TemplateHeaderFormatTypeModel.IMAGE)
+                {
+                    header.type = TemplateHeaderFormatTypeModel.IMAGE;
+                    if (CommonHelper.IsValidUrl(model.Header.Value))
+                    {
+                        header.image = new
+                        {
+                            link = model.Header.Value ?? ""
+                        };
+                    }
+                    else
+                    {
+                        header.image = new
+                        {
+                            id = model.Header.Value ?? ""
+                        };
+                    }
+                }
+                else if (model.Header.Format == TemplateHeaderFormatTypeModel.DOCUMENT)
+                {
+                    header.type = TemplateHeaderFormatTypeModel.DOCUMENT;
+                    if (CommonHelper.IsValidUrl(model.Header.Value))
+                    {
+                        header.document = new
+                        {
+                            link = model.Header.Value ?? ""
+                        };
+                    }
+                    else
+                    {
+                        header.document = new
+                        {
+                            id = model.Header.Value ?? ""
+                        };
+                    }
+                }
+                else if (model.Header.Format == TemplateHeaderFormatTypeModel.VIDEO)
+                {
+                    header.type = TemplateHeaderFormatTypeModel.VIDEO;
+                    if (CommonHelper.IsValidUrl(model.Header.Value))
+                    {
+                        header.video = new
+                        {
+                            link = model.Header.Value ?? ""
+                        };
+                    }
+                    else
+                    {
+                        header.video = new
+                        {
+                            id = model.Header.Value ?? ""
+                        };
+                    }
+                }
+
+                interactive.interactive.header = header;
+            }
+
+            //BODY
+            if (model.Body != null && !String.IsNullOrWhiteSpace(model.Body.Text))
+            {
+                interactive.interactive.body = new
+                {
+                    text = model.Body.Text.Trim()
+                };
+            }
+
+            //FOOTER
+            if (model.Footer != null && !String.IsNullOrWhiteSpace(model.Footer.Text))
+            {
+                interactive.interactive.footer = new
+                {
+                    text = model.Footer.Text.Trim()
+                };
+            }
+
+            //BUTTONS
+            if (model.Buttons.Any(x => x.Type.ToUpper() == TemplateButtonTypeModel.URL)) //BUTTON URL
+            {
+                interactive.interactive.type = "cta_url";
+                var button = model.Buttons.FirstOrDefault(x => x.Type.ToUpper() == TemplateButtonTypeModel.URL);
+
+                interactive.interactive.action = new
+                {
+                    name = "cta_url",
+                    parameters = new
+                    {
+                        display_text = button.Text,
+                        url = button.Url
+                    }
+                };
+            }
+            else if (model.Buttons.Count <= 3) //BUTTON LIST WITH LESS THAN OR EQUAL TO 3 BUTTONS
+            {
+                interactive.interactive.type = "button";
+                interactive.interactive.action = new
+                {
+                    buttons = new List<object>()
+                };
+
+                foreach (var button in model.Buttons)
+                {
+                    interactive.interactive.action.buttons.Add(new
+                    {
+                        type = "reply",
+                        reply = new
+                        {
+                            id = button.Id,
+                            title = button.Text
+                        }
+                    });
+                }
+            }
+            else if (model.Buttons.Count > 3) //BUTTON LIST WITH MORE THAN 3 BUTTONS
+            {
+                dynamic rows = new List<object>();
+                foreach (var button in model.Buttons)
+                {
+                    rows.Add(new
+                    {
+                        id = button.Id,
+                        title = button.Text
+                    });
+                }
+
+                interactive.interactive.type = "list";
+                interactive.interactive.action = new
+                {
+                    button = "Choose options",
+                    sections = new List<object> { new { rows = rows } }
+                };
+            }
+
+            return interactive;
         }
 
         private async Task<UploadMediaResultDto> UploadMedia(string phoneId, UploadMediaDto.MediaDto item)
@@ -565,7 +721,7 @@ namespace WhatsAppBridge.Handler
                         var batch = batches[i];
                         var batchRequest = new BatchMessageRequestModel
                         {
-                            batch = batch.Select(recipient => new Batch
+                            batch = batch.Select(recipient => new BatchMessageRequestModel.Batch
                             {
                                 method = "POST",
                                 relative_url = $"{senderInfo.PhoneNumberId}/messages",
@@ -693,7 +849,7 @@ namespace WhatsAppBridge.Handler
                         var batch = batches[i];
                         var batchRequest = new BatchMessageRequestModel
                         {
-                            batch = batch.Select(recipient => new Batch
+                            batch = batch.Select(recipient => new BatchMessageRequestModel.Batch
                             {
                                 method = "POST",
                                 relative_url = $"{senderInfo.PhoneNumberId}/messages",
@@ -718,7 +874,7 @@ namespace WhatsAppBridge.Handler
                             response.bodyResponse = JsonConvert.DeserializeObject<BatchMessageResponseModel.BodyResponse>(response.body);
 
                             if (response.code == 200) //If success
-                            {  
+                            {
                                 var responseDto = new SendMessageResponseDto
                                 {
                                     Success = true,
@@ -1325,7 +1481,7 @@ namespace WhatsAppBridge.Handler
 
                             cardObj.components.Add(buttons);
                         }
-                         
+
                         cardComponent.cards.Add(cardObj);
                     }
 
@@ -1454,6 +1610,134 @@ namespace WhatsAppBridge.Handler
         public async Task<ApiResult> HandleSendBatchCarouselMessage(SendMessageCarouselRequestDto model)
         {
             return null;
+        }
+
+        /// <summary>
+        /// Send interactive message
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
+        public async Task<ApiResult> HandleSendInteractiveMessage(SendInteractiveMessageRequestDto model)
+        {
+            List<SendMessageResponseDto> models = new List<SendMessageResponseDto>();
+
+            try
+            {
+                model.PhoneNumbers = model.PhoneNumbers.Where(x => !String.IsNullOrWhiteSpace(x)).Select(x => x.Replace("+", "").Trim()).ToList();
+                int batchSize = _whatsAppConfigurationSetting.Value.SendMessageBatchSize;
+                var batches = model.PhoneNumbers.ChunkBy(batchSize);
+
+                _logger.LogInformation("Calling function HandleSendInteractiveMessage with received object {object} with batch size {batchSize} and totalbatchCount {totalbatchCount}", JsonConvert.SerializeObject(model), batchSize, batches.Count);
+
+                var interactive = GetInteractiveMessageContent(model);
+
+                var senderInfo = await _integrationHandler.GetSenderInformation(model.ClientId, model.SenderNameId);
+                if (senderInfo == null)
+                {
+                    return new ApiResult
+                    {
+                        StatusCode = 404,
+                        Message = $"Client not found with clientId: {model.ClientId}"
+                    };
+                }
+
+                _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {senderInfo.AccessToken}");
+
+                for (int i = 0; i < batches.Count; i++)
+                {
+                    string requestStr = String.Empty;
+                    string responseStr = String.Empty;
+
+                    try
+                    {
+                        var batch = batches[i];
+                        var batchRequest = new BatchMessageRequestModel
+                        {
+                            batch = batch.Select(recipient => new BatchMessageRequestModel.Batch
+                            {
+                                method = "POST",
+                                relative_url = $"{senderInfo.PhoneNumberId}/messages",
+                                body = $"messaging_product=whatsapp&recipient_type=individual&to={recipient}&type={interactive.type}&{interactive.type}={JsonConvert.SerializeObject(interactive.interactive)}"
+                            }).ToList()
+                        };
+
+                        requestStr = JsonConvert.SerializeObject(batchRequest);
+
+                        _logger.LogInformation("Created Batch Request in function HandleSendInteractiveMessage with received object {object} with batch size {batchSize} and totalbatchCount {totalbatchCount} and batchIndex {batchIndex} and batchRequest {batchRequest}", JsonConvert.SerializeObject(model), batchSize, batches.Count, (i + 1), requestStr);
+
+                        // Send the batch request   
+                        var resp = await _httpClient.PostAsync("", new StringContent(requestStr, null, "application/json"));
+                        responseStr = await resp.Content.ReadAsStringAsync();
+
+                        _logger.LogInformation("Received Batch Response in function HandleSendInteractiveMessage with received object {object} with batch size {batchSize} and totalbatchCount {totalbatchCount} and batchIndex {batchIndex} and batchRequest {batchRequest} and batchResponse {batchResponse}", JsonConvert.SerializeObject(model), batchSize, batches.Count, (i + 1), requestStr, responseStr);
+
+                        var responseModel = JsonConvert.DeserializeObject<List<BatchMessageResponseModel>>(responseStr);
+                        for (int j = 0; j < batch.Count; j++)
+                        {
+                            var response = responseModel[j];
+                            response.bodyResponse = JsonConvert.DeserializeObject<BatchMessageResponseModel.BodyResponse>(response.body);
+
+                            if (response.code == 200) //If success
+                            {
+                                var responseDto = new SendMessageResponseDto
+                                {
+                                    Success = true,
+                                    PhoneNumber = response.bodyResponse.contacts[0].wa_id,
+                                    WAId = response.bodyResponse.messages[0].id,
+                                    Status = response.code,
+                                    MessageId = response.bodyResponse.messages[0].id
+                                };
+
+                                models.Add(responseDto);
+                            }
+                            else
+                            {
+                                var responseDto = new SendMessageResponseDto
+                                {
+                                    Success = false,
+                                    PhoneNumber = batch[j],
+                                    WAId = String.Empty,
+                                    Status = response.bodyResponse.error.code,
+                                    MessageId = String.Empty,
+                                    Errors = new List<string> {
+                                        response.bodyResponse.error.message
+                                    }
+                                };
+
+                                models.Add(responseDto);
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError("Exception occurred {exception} when executing function HandleSendInteractiveMessage with received object {object} with batch size {batchSize} and batchCount {batchCount} and batchIndex {batchIndex} and batchRequest {batchRequest} and batchResponse {batchResponse}", ex, JsonConvert.SerializeObject(model), batchSize, batches.Count, i, requestStr, responseStr);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Exception occurred {exception} when executing function HandleSendInteractiveMessage with received object {object}", ex, JsonConvert.SerializeObject(model));
+            }
+
+            _logger.LogInformation("Execution ends for function HandleSendInteractiveMessage with received object {object} and response {response}", JsonConvert.SerializeObject(model), JsonConvert.SerializeObject(models));
+
+            if (!models.Any())
+            {
+                return new ApiResult
+                {
+                    StatusCode = 400,
+                    Message = "Couldn't send messages",
+                    Result = models
+                };
+            }
+
+            return new ApiResult
+            {
+                Success = true,
+                StatusCode = 200,
+                Message = "Data processed succesfully",
+                Result = models
+            };
         }
 
         #endregion
