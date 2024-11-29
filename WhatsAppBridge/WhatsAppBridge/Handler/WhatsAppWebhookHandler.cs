@@ -233,7 +233,7 @@ namespace WhatsAppBridge.Handler
                         {
                             if (message.interactive.list_reply != null)
                             {
-                                message.interactive.list_reply = new Message.Interactive.ListReply
+                                updateDto.listReply = new MessageReceiveDto.ListReply
                                 {
                                     id = message.interactive.list_reply.id,
                                     title = message.interactive.list_reply.title
@@ -242,7 +242,7 @@ namespace WhatsAppBridge.Handler
 
                             if (message.interactive.button_reply != null)
                             {
-                                message.interactive.button_reply = new Message.Interactive.ButtonReply
+                                updateDto.buttonReply = new MessageReceiveDto.ButtonReply
                                 {
                                     id = message.interactive.button_reply.id,
                                     title = message.interactive.button_reply.title

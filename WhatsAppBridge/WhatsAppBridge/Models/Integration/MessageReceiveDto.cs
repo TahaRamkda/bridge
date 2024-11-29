@@ -13,12 +13,13 @@
         public Text text { get; set; }
         public Image image { get; set; }
         public Document document { get; set; }
- 
+
         public Location location { get; set; }
-        public Sticker sticker { get; set; } 
+        public Sticker sticker { get; set; }
         public Video video { get; set; }
-        public Interactive interactive { get; set; }
-        
+        public ButtonReply buttonReply { get; set; }
+        public ListReply listReply { get; set; }
+
         public class PhoneNumber
         {
             public string display_phone_number { get; set; }
@@ -66,7 +67,7 @@
         {
             public string body { get; set; }
         }
-         
+
         public class Location
         {
             public string latitude { get; set; }
@@ -82,22 +83,16 @@
             public bool animated { get; set; }
         }
 
-        public class Interactive
+        public class ButtonReply
         {
-            public string type { get; set; }
-            public ButtonReply button_reply { get; set; }
-            public ListReply list_reply { get; set; }
-            public class ButtonReply
-            {
-                public string id { get; set; }
-                public string title { get; set; }
-            }
+            public string id { get; set; }
+            public string title { get; set; }
+        }
 
-            public class ListReply
-            {
-                public string id { get; set; }
-                public string title { get; set; }
-            }
+        public class ListReply
+        {
+            public string id { get; set; }
+            public string title { get; set; }
         }
     }
 }
