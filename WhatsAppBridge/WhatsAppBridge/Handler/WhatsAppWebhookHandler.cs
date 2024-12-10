@@ -147,6 +147,15 @@ namespace WhatsAppBridge.Handler
                             };
                         }
 
+                        if (messageUpdate.contacts != null && messageUpdate.contacts.Any())
+                        {
+                            updateDto.contact = new MessageReceiveDto.Contact
+                            {
+                                wa_id = messageUpdate.contacts[0].wa_id,
+                                name = messageUpdate.contacts[0].profile?.name ?? ""
+                            };
+                        }
+
                         if (message.context != null)
                         {
                             updateDto.context = new MessageReceiveDto.Context
