@@ -23,6 +23,7 @@
         public Location location { get; set; }
         public Sticker sticker { get; set; }
         public Video video { get; set; }
+        public Audio audio { get; set; }
         public ButtonReply buttonReply { get; set; }
         public ListReply listReply { get; set; }
 
@@ -73,6 +74,14 @@
             public string caption { get; set; }
             public string mime_type { get; set; }
             public string sha256 { get; set; }
+        }
+
+        public class Audio
+        {
+            public string mime_type { get; set; }
+            public string sha256 { get; set; }
+            public string id { get; set; }
+            public bool voice { get; set; }
         }
 
         public class Text

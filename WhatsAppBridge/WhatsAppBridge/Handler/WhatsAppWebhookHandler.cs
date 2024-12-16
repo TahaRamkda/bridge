@@ -205,6 +205,17 @@ namespace WhatsAppBridge.Handler
                             };
                         }
 
+                        if (message.audio != null)
+                        {
+                            updateDto.audio = new MessageReceiveDto.Audio
+                            {
+                                id = message.audio.id,
+                                voice = message.audio.voice,
+                                mime_type = message.audio.mime_type,
+                                sha256 = message.audio.sha256
+                            };
+                        }
+
                         if (message.document != null)
                         {
                             updateDto.document = new MessageReceiveDto.Document
