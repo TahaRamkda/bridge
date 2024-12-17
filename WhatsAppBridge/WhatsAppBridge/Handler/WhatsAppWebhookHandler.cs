@@ -129,6 +129,10 @@ namespace WhatsAppBridge.Handler
                 {
                     foreach (var message in messageUpdate.messages)
                     {
+                        //Don't send sms update in case of system type
+                        if (message.type == "system")
+                            continue;
+
                         var updateDto = new MessageReceiveDto
                         {
                             client_Id = clientId,
