@@ -69,6 +69,14 @@ namespace WhatsAppBridge.Handler
                     };
 
                     break;
+                case MessageType.VIDEO:
+                    messageContent = new
+                    {
+                        id = model.MediaId,
+                        caption = model.Message
+                    };
+
+                    break;
                 case MessageType.DOCUMENT:
                     messageContent = new
                     {
