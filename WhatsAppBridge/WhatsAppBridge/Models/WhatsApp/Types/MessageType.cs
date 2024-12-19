@@ -6,5 +6,6 @@
         public const string IMAGE = "image";
         public const string DOCUMENT = "document";
         public const string VIDEO = "video";
+        public const string AUDIO = "audio";
     }
 }

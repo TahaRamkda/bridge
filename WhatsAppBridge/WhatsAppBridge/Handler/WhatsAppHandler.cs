@@ -69,6 +69,15 @@ namespace WhatsAppBridge.Handler
                     };
 
                     break;
+
+                case MessageType.AUDIO:
+                    messageContent = new
+                    {
+                        id = model.MediaId
+                    };
+
+                    break;
+
                 case MessageType.VIDEO:
                     messageContent = new
                     {
@@ -699,7 +708,7 @@ namespace WhatsAppBridge.Handler
             {
                 model.Type = model.Type.ToLower();
                 //model.PhoneId = model.PhoneId.Trim();
-                model.Message = model.Message.Trim();
+                model.Message = (model.Message ?? "").Trim();
                 model.PhoneNumbers = model.PhoneNumbers.Where(x => !String.IsNullOrWhiteSpace(x)).Select(x => x.Replace("+", "").Trim()).ToList();
                 int batchSize = _whatsAppConfigurationSetting.Value.SendMessageBatchSize;
                 var batches = model.PhoneNumbers.ChunkBy(batchSize);
@@ -996,7 +1005,7 @@ namespace WhatsAppBridge.Handler
             try
             {
                 //Replace empty spaces in template name with _
-                model.Name = model.Name.Replace(" ", "_");
+                model.Name = (model.Name ?? "").Replace(" ", "_");
 
                 _logger.LogInformation("Calling function HandleMessageTemplateOps with received payload {payload}", JsonConvert.SerializeObject(model));
 
