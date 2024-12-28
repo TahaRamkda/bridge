@@ -1038,7 +1038,7 @@ namespace WhatsAppBridge.Handler
                 };
 
                 //Add Header
-                if (model.Header != null)
+                if (model.Header != null && model.Header.Format != TemplateHeaderFormatTypeModel.NONE)
                 {
                     model.Header.Format = model.Header.Format.Trim().ToUpper();
                     dynamic header = new ExpandoObject();
