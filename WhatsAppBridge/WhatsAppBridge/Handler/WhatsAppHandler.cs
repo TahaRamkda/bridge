@@ -1374,7 +1374,7 @@ namespace WhatsAppBridge.Handler
                         cardObj.components = new List<dynamic>();
 
                         //Add Header
-                        if (card.Header != null)
+                        if (card.Header != null && card.Header.Format != TemplateHeaderFormatTypeModel.NONE)
                         {
                             card.Header.Format = card.Header.Format.Trim().ToUpper();
                             dynamic header = new ExpandoObject();
