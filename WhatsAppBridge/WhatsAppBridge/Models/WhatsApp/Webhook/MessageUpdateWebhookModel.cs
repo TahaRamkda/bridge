@@ -1,4 +1,5 @@
-﻿namespace WhatsAppBridge.Models.WhatsApp.Webhook
+﻿
+namespace WhatsAppBridge.Models.WhatsApp.Webhook
 {
     public class MessageUpdateWebhookModel
     {
@@ -111,6 +112,7 @@
             public Location location { get; set; }
             public Sticker sticker { get; set; }
             public Interactive interactive { get; set; }
+            public Reaction reaction { get; set; }
 
             public class Text
             {
@@ -188,6 +190,12 @@
                     public string id { get; set; }
                     public string title { get; set; }
                 }
+            }
+
+            public class Reaction
+            {
+                public string message_id { get; set; }
+                public string emoji { get; set; }
             }
         }
     }

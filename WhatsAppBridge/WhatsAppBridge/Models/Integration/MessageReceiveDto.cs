@@ -26,6 +26,7 @@
         public Audio audio { get; set; }
         public ButtonReply buttonReply { get; set; }
         public ListReply listReply { get; set; }
+        public Reaction reaction { get; set; }
 
         public class PhoneNumber
         {
@@ -114,6 +115,12 @@
         {
             public string id { get; set; }
             public string title { get; set; }
+        }
+
+        public class Reaction
+        {
+            public string message_id { get; set; }
+            public string emoji { get; set; } 
         }
     }
 }

@@ -41,14 +41,14 @@ namespace WhatsAppBridge.Handler
                 TemplateUpdateWebhookModel templateUpdate = JsonConvert.DeserializeObject<TemplateUpdateWebhookModel>(JsonConvert.SerializeObject(change.value));
 
                 var fullUrl = CommonHelper.GetFullUrl(baseUrl, $"/{templateUpdate.message_template_id}");
-                _logger.LogInformation("Calling WhatsApp GetTemplateById method with templateId {templateId} with url {url}", templateUpdate.message_template_id, fullUrl);
+                _logger.LogInformation("Calling WhatsApp HandleMessageTemplateStatusUpdate method with templateId {templateId} with url {url}", templateUpdate.message_template_id, fullUrl);
 
                 var clientInfo = await _integrationHandler.GetClientInformation(clientId);
                 _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {clientInfo.AccessToken}");
                 var response = await _httpClient.GetAsync($"/{templateUpdate.message_template_id}");
                 var content = await response.Content.ReadAsStringAsync();
 
-                _logger.LogInformation("Received response of WhatsApp GetTemplateById method with templateId {templateId} with url {url} and content {content}", templateUpdate.message_template_id, fullUrl, content);
+                _logger.LogInformation("Received response of WhatsApp HandleMessageTemplateStatusUpdate method with templateId {templateId} with url {url} and content {content}", templateUpdate.message_template_id, fullUrl, content);
 
                 var messageTemplate = JsonConvert.DeserializeObject<MessageTemplateModel>(await response.Content.ReadAsStringAsync());
 
@@ -251,6 +251,24 @@ namespace WhatsAppBridge.Handler
                                 animated = message.sticker.animated,
                                 caption = message.sticker.caption
                             };
+                        }
+
+                        if (message.reaction != null)
+                        {
+                            updateDto.reaction = new MessageReceiveDto.Reaction
+                            {
+                                message_id = message.reaction.message_id,
+                                emoji = message.reaction.emoji
+                            };
+
+                            if (message.context == null && updateDto.contact != null)
+                            {
+                                updateDto.context = new MessageReceiveDto.Context
+                                {
+                                    from = updateDto.contact.wa_id,
+                                    wam_Id = message.reaction.message_id
+                                };
+                            }
                         }
 
                         if (message.interactive != null)
