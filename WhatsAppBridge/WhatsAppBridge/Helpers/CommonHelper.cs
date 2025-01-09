@@ -80,5 +80,13 @@ namespace WhatsAppBridge.Helpers
             string formattedDateTime = dateTime.ToString("yyyy-MM-ddTHH:mm:ss.fffZ", System.Globalization.CultureInfo.InvariantCulture);
             return formattedDateTime;
         }
+
+        public static string EncodeSpecialCharacters(this string source)
+        {
+            if (String.IsNullOrWhiteSpace(source))
+                return "";
+
+            return source.Replace("\n", Environment.NewLine).Replace("&", "%26").Replace("?", "%3F").Trim();
+        }
     }
 }

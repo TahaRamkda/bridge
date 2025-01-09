@@ -5,6 +5,7 @@ using Newtonsoft.Json.Linq;
 using System.Dynamic;
 using System.Net.Http.Headers;
 using System.Text;
+using System.Web;
 using WhatsAppBridge.Helpers;
 using WhatsAppBridge.Models;
 using WhatsAppBridge.Models.Integration;
@@ -56,7 +57,7 @@ namespace WhatsAppBridge.Handler
                     messageContent = new
                     {
                         preview_url = false,
-                        body = model.Message
+                        body = model.Message.EncodeSpecialCharacters()
                     };
 
                     break;
@@ -64,8 +65,8 @@ namespace WhatsAppBridge.Handler
                 case MessageType.IMAGE:
                     messageContent = new
                     {
-                        id = model.MediaId,
-                        caption = model.Message
+                        id = model.MediaId.EncodeSpecialCharacters(),
+                        caption = model.Message.EncodeSpecialCharacters()
                     };
 
                     break;
@@ -73,7 +74,7 @@ namespace WhatsAppBridge.Handler
                 case MessageType.AUDIO:
                     messageContent = new
                     {
-                        id = model.MediaId
+                        id = model.MediaId.EncodeSpecialCharacters()
                     };
 
                     break;
@@ -81,17 +82,17 @@ namespace WhatsAppBridge.Handler
                 case MessageType.VIDEO:
                     messageContent = new
                     {
-                        id = model.MediaId,
-                        caption = model.Message
+                        id = model.MediaId.EncodeSpecialCharacters(),
+                        caption = model.Message.EncodeSpecialCharacters()
                     };
 
                     break;
                 case MessageType.DOCUMENT:
                     messageContent = new
                     {
-                        id = model.MediaId,
-                        caption = model.Message,
-                        filename = model.FileName
+                        id = model.MediaId.EncodeSpecialCharacters(),
+                        caption = model.Message.EncodeSpecialCharacters(),
+                        filename = model.FileName.EncodeSpecialCharacters()
                     };
 
                     break;
@@ -112,10 +113,10 @@ namespace WhatsAppBridge.Handler
                 type = "template",
                 template = new SendMessageTemplateModel.Template
                 {
-                    name = model.TemplateName.Trim(),
+                    name = model.TemplateName.EncodeSpecialCharacters(),
                     language = new SendMessageTemplateModel.Template.Language
                     {
-                        code = model.LanguageCode
+                        code = model.LanguageCode.EncodeSpecialCharacters()
                     }
                 }
             };
@@ -141,7 +142,7 @@ namespace WhatsAppBridge.Handler
                                 component.parameters.Add(new
                                 {
                                     type = TemplateHeaderFormatTypeModel.TEXT.ToLower(),
-                                    text = value.Value ?? ""
+                                    text = value.Value.EncodeSpecialCharacters()
                                 });
                                 break;
                             case TemplateHeaderFormatTypeModel.IMAGE:
@@ -152,7 +153,7 @@ namespace WhatsAppBridge.Handler
                                         type = TemplateHeaderFormatTypeModel.IMAGE.ToLower(),
                                         image = new
                                         {
-                                            link = value.Value ?? ""
+                                            link = value.Value.EncodeSpecialCharacters()
                                         }
                                     });
                                 }
@@ -163,8 +164,7 @@ namespace WhatsAppBridge.Handler
                                         type = TemplateHeaderFormatTypeModel.IMAGE.ToLower(),
                                         image = new
                                         {
-                                            id = value.Value ?? ""
-                                            //link = value.Value ?? ""
+                                            id = value.Value.EncodeSpecialCharacters() 
                                         }
                                     });
                                 }
@@ -178,7 +178,7 @@ namespace WhatsAppBridge.Handler
                                         type = TemplateHeaderFormatTypeModel.DOCUMENT.ToLower(),
                                         document = new
                                         {
-                                            link = value.Value ?? ""
+                                            link = value.Value.EncodeSpecialCharacters()
                                         }
                                     });
                                 }
@@ -189,7 +189,7 @@ namespace WhatsAppBridge.Handler
                                         type = TemplateHeaderFormatTypeModel.DOCUMENT.ToLower(),
                                         document = new
                                         {
-                                            id = value.Value ?? ""
+                                            id = value.Value.EncodeSpecialCharacters()
                                         }
                                     });
                                 }
@@ -203,7 +203,7 @@ namespace WhatsAppBridge.Handler
                                         type = TemplateHeaderFormatTypeModel.VIDEO.ToLower(),
                                         video = new
                                         {
-                                            link = value.Value
+                                            link = value.Value.EncodeSpecialCharacters()
                                         }
                                     });
                                 }
@@ -214,7 +214,7 @@ namespace WhatsAppBridge.Handler
                                         type = TemplateHeaderFormatTypeModel.VIDEO.ToLower(),
                                         video = new
                                         {
-                                            id = value.Value ?? ""
+                                            id = value.Value.EncodeSpecialCharacters()
                                         }
                                     });
                                 }
@@ -238,7 +238,7 @@ namespace WhatsAppBridge.Handler
                         component.parameters.Add(new
                         {
                             type = TemplateHeaderFormatTypeModel.TEXT.ToLower(),
-                            text = value.Value ?? ""
+                            text = value.Value.EncodeSpecialCharacters()
                         });
                     }
 
@@ -265,23 +265,21 @@ namespace WhatsAppBridge.Handler
                                 {
                                     //type = TemplateButtonTypeModel.QUICK_REPLY.ToLower(),
                                     type = "text",
-                                    text = value.Value ?? ""
+                                    text = value.Value.EncodeSpecialCharacters()
                                 });
                                 break;
                             case TemplateButtonTypeModel.PHONE_NUMBER:
                                 component.parameters.Add(new
                                 {
-                                    type = "text",
-                                    //index = value.Index,
-                                    text = value.Value ?? ""
+                                    type = "text", 
+                                    text = value.Value.EncodeSpecialCharacters()
                                 });
                                 break;
                             case TemplateButtonTypeModel.URL:
                                 component.parameters.Add(new
                                 {
-                                    type = "text",
-                                    //index = value.Index,
-                                    text = value.Value ?? ""
+                                    type = "text", 
+                                    text = value.Value.EncodeSpecialCharacters()
                                 });
                                 break;
 
@@ -318,7 +316,7 @@ namespace WhatsAppBridge.Handler
                 if (model.Header.Format == TemplateHeaderFormatTypeModel.TEXT)
                 {
                     header.type = TemplateHeaderFormatTypeModel.TEXT;
-                    header.text = model.Header.Value;
+                    header.text = model.Header.Value.EncodeSpecialCharacters();
                 }
                 else if (model.Header.Format == TemplateHeaderFormatTypeModel.IMAGE)
                 {
@@ -327,14 +325,14 @@ namespace WhatsAppBridge.Handler
                     {
                         header.image = new
                         {
-                            link = model.Header.Value ?? ""
+                            link = model.Header.Value.EncodeSpecialCharacters()
                         };
                     }
                     else
                     {
                         header.image = new
                         {
-                            id = model.Header.Value ?? ""
+                            id = model.Header.Value.EncodeSpecialCharacters()
                         };
                     }
                 }
@@ -345,14 +343,14 @@ namespace WhatsAppBridge.Handler
                     {
                         header.document = new
                         {
-                            link = model.Header.Value ?? ""
+                            link = model.Header.Value.EncodeSpecialCharacters()
                         };
                     }
                     else
                     {
                         header.document = new
                         {
-                            id = model.Header.Value ?? ""
+                            id = model.Header.Value.EncodeSpecialCharacters()
                         };
                     }
                 }
@@ -363,14 +361,14 @@ namespace WhatsAppBridge.Handler
                     {
                         header.video = new
                         {
-                            link = model.Header.Value ?? ""
+                            link = model.Header.Value.EncodeSpecialCharacters()
                         };
                     }
                     else
                     {
                         header.video = new
                         {
-                            id = model.Header.Value ?? ""
+                            id = model.Header.Value.EncodeSpecialCharacters()
                         };
                     }
                 }
@@ -383,7 +381,7 @@ namespace WhatsAppBridge.Handler
             {
                 interactive.interactive.body = new
                 {
-                    text = model.Body.Text.Trim()
+                    text = model.Body.Text.EncodeSpecialCharacters()
                 };
             }
 
@@ -392,7 +390,7 @@ namespace WhatsAppBridge.Handler
             {
                 interactive.interactive.footer = new
                 {
-                    text = model.Footer.Text.Trim()
+                    text = model.Footer.Text.EncodeSpecialCharacters()
                 };
             }
 
@@ -407,8 +405,8 @@ namespace WhatsAppBridge.Handler
                     name = "cta_url",
                     parameters = new
                     {
-                        display_text = button.Text,
-                        url = button.Url
+                        display_text = button.Text.EncodeSpecialCharacters(),
+                        url = button.Url.EncodeSpecialCharacters()
                     }
                 };
             }
@@ -427,8 +425,8 @@ namespace WhatsAppBridge.Handler
                         type = "reply",
                         reply = new
                         {
-                            id = button.Id,
-                            title = button.Text
+                            id = button.Id.EncodeSpecialCharacters(),
+                            title = button.Text.EncodeSpecialCharacters()
                         }
                     });
                 }
@@ -440,8 +438,8 @@ namespace WhatsAppBridge.Handler
                 {
                     rows.Add(new
                     {
-                        id = button.Id,
-                        title = button.Text
+                        id = button.Id.EncodeSpecialCharacters(),
+                        title = button.Text.EncodeSpecialCharacters()
                     });
                 }
 
@@ -1634,6 +1632,11 @@ namespace WhatsAppBridge.Handler
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
+        /// <summary>
+        /// Send interactive message
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
         public async Task<ApiResult> HandleSendInteractiveMessage(SendInteractiveMessageRequestDto model)
         {
             List<SendMessageResponseDto> models = new List<SendMessageResponseDto>();
@@ -1641,11 +1644,13 @@ namespace WhatsAppBridge.Handler
             try
             {
                 model.PhoneNumbers = model.PhoneNumbers.Where(x => !String.IsNullOrWhiteSpace(x)).Select(x => x.Replace("+", "").Trim()).ToList();
-                int batchSize = 1; //_whatsAppConfigurationSetting.Value.SendMessageBatchSize;
+                int batchSize = _whatsAppConfigurationSetting.Value.SendMessageBatchSize;
                 var batches = model.PhoneNumbers.ChunkBy(batchSize);
 
                 _logger.LogInformation("Calling function HandleSendInteractiveMessage with received object {object} with batch size {batchSize} and totalbatchCount {totalbatchCount}", JsonConvert.SerializeObject(model), batchSize, batches.Count);
-                 
+
+                var interactive = GetInteractiveMessageContent(model);
+
                 var senderInfo = await _integrationHandler.GetSenderInformation(model.ClientId, model.SenderNameId);
                 if (senderInfo == null)
                 {
@@ -1656,8 +1661,6 @@ namespace WhatsAppBridge.Handler
                     };
                 }
 
-                var interactive = GetInteractiveMessageContent(model);
-
                 _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {senderInfo.AccessToken}");
 
                 for (int i = 0; i < batches.Count; i++)
@@ -1666,29 +1669,24 @@ namespace WhatsAppBridge.Handler
                     string responseStr = String.Empty;
 
                     try
-                    { 
+                    {
                         var batch = batches[i];
-                        
-                        interactive.to = batch[i]; //select only first phone number as the batchsize is set to 1 for now
+                        var batchRequest = new BatchMessageRequestModel
+                        {
+                            batch = batch.Select(recipient => new BatchMessageRequestModel.Batch
+                            {
+                                method = "POST",
+                                relative_url = $"{senderInfo.PhoneNumberId}/messages",
+                                body = $"messaging_product=whatsapp&recipient_type=individual&to={recipient}&type={interactive.type}&{interactive.type}={JsonConvert.SerializeObject(interactive.interactive)}"
+                            }).ToList()
+                        };
 
-                        //var batchRequest = new BatchMessageRequestModel
-                        //{
-                        //    batch = batch.Select(recipient => new BatchMessageRequestModel.Batch
-                        //    {
-                        //        method = "POST",
-                        //        relative_url = $"{senderInfo.PhoneNumberId}/messages",
-                        //        body = $"messaging_product=whatsapp&recipient_type=individual&to={recipient}&type={interactive.type}&{interactive.type}={JsonConvert.SerializeObject(interactive.interactive)}"
-                        //    }).ToList()
-                        //};
-
-                        //requestStr = JsonConvert.SerializeObject(batchRequest);
-                        requestStr = JsonConvert.SerializeObject(interactive);
+                        requestStr = JsonConvert.SerializeObject(batchRequest);
 
                         _logger.LogInformation("Created Batch Request in function HandleSendInteractiveMessage with received object {object} with batch size {batchSize} and totalbatchCount {totalbatchCount} and batchIndex {batchIndex} and batchRequest {batchRequest}", JsonConvert.SerializeObject(model), batchSize, batches.Count, (i + 1), requestStr);
 
                         // Send the batch request   
-                        //var resp = await _httpClient.PostAsync("", new StringContent(requestStr, null, "application/json"));
-                        var resp = await _httpClient.PostAsync($"{senderInfo.PhoneNumberId}/messages", new StringContent(requestStr, null, "application/json"));
+                        var resp = await _httpClient.PostAsync("", new StringContent(requestStr, null, "application/json"));
                         responseStr = await resp.Content.ReadAsStringAsync();
 
                         _logger.LogInformation("Received Batch Response in function HandleSendInteractiveMessage with received object {object} with batch size {batchSize} and totalbatchCount {totalbatchCount} and batchIndex {batchIndex} and batchRequest {batchRequest} and batchResponse {batchResponse}", JsonConvert.SerializeObject(model), batchSize, batches.Count, (i + 1), requestStr, responseStr);
