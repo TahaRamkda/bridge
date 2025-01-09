@@ -1641,13 +1641,11 @@ namespace WhatsAppBridge.Handler
             try
             {
                 model.PhoneNumbers = model.PhoneNumbers.Where(x => !String.IsNullOrWhiteSpace(x)).Select(x => x.Replace("+", "").Trim()).ToList();
-                int batchSize = _whatsAppConfigurationSetting.Value.SendMessageBatchSize;
+                int batchSize = 1; //_whatsAppConfigurationSetting.Value.SendMessageBatchSize;
                 var batches = model.PhoneNumbers.ChunkBy(batchSize);
 
                 _logger.LogInformation("Calling function HandleSendInteractiveMessage with received object {object} with batch size {batchSize} and totalbatchCount {totalbatchCount}", JsonConvert.SerializeObject(model), batchSize, batches.Count);
-
-                var interactive = GetInteractiveMessageContent(model);
-
+                 
                 var senderInfo = await _integrationHandler.GetSenderInformation(model.ClientId, model.SenderNameId);
                 if (senderInfo == null)
                 {
@@ -1658,6 +1656,8 @@ namespace WhatsAppBridge.Handler
                     };
                 }
 
+                var interactive = GetInteractiveMessageContent(model);
+
                 _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {senderInfo.AccessToken}");
 
                 for (int i = 0; i < batches.Count; i++)
@@ -1666,24 +1666,29 @@ namespace WhatsAppBridge.Handler
                     string responseStr = String.Empty;
 
                     try
-                    {
+                    { 
                         var batch = batches[i];
-                        var batchRequest = new BatchMessageRequestModel
-                        {
-                            batch = batch.Select(recipient => new BatchMessageRequestModel.Batch
-                            {
-                                method = "POST",
-                                relative_url = $"{senderInfo.PhoneNumberId}/messages",
-                                body = $"messaging_product=whatsapp&recipient_type=individual&to={recipient}&type={interactive.type}&{interactive.type}={JsonConvert.SerializeObject(interactive.interactive)}"
-                            }).ToList()
-                        };
+                        
+                        interactive.to = batch[i]; //select only first phone number as the batchsize is set to 1 for now
 
-                        requestStr = JsonConvert.SerializeObject(batchRequest);
+                        //var batchRequest = new BatchMessageRequestModel
+                        //{
+                        //    batch = batch.Select(recipient => new BatchMessageRequestModel.Batch
+                        //    {
+                        //        method = "POST",
+                        //        relative_url = $"{senderInfo.PhoneNumberId}/messages",
+                        //        body = $"messaging_product=whatsapp&recipient_type=individual&to={recipient}&type={interactive.type}&{interactive.type}={JsonConvert.SerializeObject(interactive.interactive)}"
+                        //    }).ToList()
+                        //};
+
+                        //requestStr = JsonConvert.SerializeObject(batchRequest);
+                        requestStr = JsonConvert.SerializeObject(interactive);
 
                         _logger.LogInformation("Created Batch Request in function HandleSendInteractiveMessage with received object {object} with batch size {batchSize} and totalbatchCount {totalbatchCount} and batchIndex {batchIndex} and batchRequest {batchRequest}", JsonConvert.SerializeObject(model), batchSize, batches.Count, (i + 1), requestStr);
 
                         // Send the batch request   
-                        var resp = await _httpClient.PostAsync("", new StringContent(requestStr, null, "application/json"));
+                        //var resp = await _httpClient.PostAsync("", new StringContent(requestStr, null, "application/json"));
+                        var resp = await _httpClient.PostAsync($"{senderInfo.PhoneNumberId}/messages", new StringContent(requestStr, null, "application/json"));
                         responseStr = await resp.Content.ReadAsStringAsync();
 
                         _logger.LogInformation("Received Batch Response in function HandleSendInteractiveMessage with received object {object} with batch size {batchSize} and totalbatchCount {totalbatchCount} and batchIndex {batchIndex} and batchRequest {batchRequest} and batchResponse {batchResponse}", JsonConvert.SerializeObject(model), batchSize, batches.Count, (i + 1), requestStr, responseStr);
