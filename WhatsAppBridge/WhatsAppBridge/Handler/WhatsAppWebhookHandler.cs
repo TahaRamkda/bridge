@@ -129,8 +129,8 @@ namespace WhatsAppBridge.Handler
                 {
                     foreach (var message in messageUpdate.messages)
                     {
-                        //Don't send sms update in case of system type
-                        if (message.type == "system")
+                        //Don't send sms update in case of system type, unsupported
+                        if (message.type == "system" || message.type == "unsupported")
                             continue;
 
                         var updateDto = new MessageReceiveDto
