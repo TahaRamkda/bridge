@@ -51,8 +51,10 @@ namespace WhatsAppBridge.Handler
         private dynamic GetMessageContent(SendMessageRequestDto model)
         {
             dynamic messageContent = null;
+            model.Type = model.Type ?? "";
+            model.Type = model.Type.ToLower() == "none" ? "text" : model.Type; //If none, convert it to text
             switch (model.Type.ToLower())
-            {
+            { 
                 case MessageType.TEXT:
                     messageContent = new
                     {
@@ -164,7 +166,7 @@ namespace WhatsAppBridge.Handler
                                         type = TemplateHeaderFormatTypeModel.IMAGE.ToLower(),
                                         image = new
                                         {
-                                            id = value.Value.EncodeSpecialCharacters() 
+                                            id = value.Value.EncodeSpecialCharacters()
                                         }
                                     });
                                 }
@@ -271,14 +273,14 @@ namespace WhatsAppBridge.Handler
                             case TemplateButtonTypeModel.PHONE_NUMBER:
                                 component.parameters.Add(new
                                 {
-                                    type = "text", 
+                                    type = "text",
                                     text = value.Value.EncodeSpecialCharacters()
                                 });
                                 break;
                             case TemplateButtonTypeModel.URL:
                                 component.parameters.Add(new
                                 {
-                                    type = "text", 
+                                    type = "text",
                                     text = value.Value.EncodeSpecialCharacters()
                                 });
                                 break;
