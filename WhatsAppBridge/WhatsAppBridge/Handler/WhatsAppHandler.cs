@@ -2,16 +2,21 @@
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System;
 using System.Dynamic;
+using System.IO;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Web;
 using WhatsAppBridge.Helpers;
 using WhatsAppBridge.Models;
 using WhatsAppBridge.Models.Integration;
+using WhatsAppBridge.Models.Integration.Flow;
 using WhatsAppBridge.Models.WhatsApp;
+using WhatsAppBridge.Models.WhatsApp.Flow;
 using WhatsAppBridge.Models.WhatsApp.Types;
 using WhatsAppBridge.Settings;
+using static WhatsAppBridge.Models.WhatsApp.SendMessageTemplateModel;
 
 namespace WhatsAppBridge.Handler
 {
@@ -54,7 +59,7 @@ namespace WhatsAppBridge.Handler
             model.Type = model.Type ?? "";
             model.Type = model.Type.ToLower() == "none" ? "text" : model.Type; //If none, convert it to text
             switch (model.Type.ToLower())
-            { 
+            {
                 case MessageType.TEXT:
                     messageContent = new
                     {
@@ -695,6 +700,8 @@ namespace WhatsAppBridge.Handler
 
         #region Methods
 
+        #region Messages
+
         /// <summary>
         /// Send batch messages
         /// </summary>
@@ -826,11 +833,16 @@ namespace WhatsAppBridge.Handler
         }
 
         /// <summary>
-        /// Send batch template messages
+        /// Send interactive message
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
-        public async Task<ApiResult> HandleSendBatchTemplateMessage(SendMessageTemplateRequestDto model)
+        /// <summary>
+        /// Send interactive message
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
+        public async Task<ApiResult> HandleSendInteractiveMessage(SendInteractiveMessageRequestDto model)
         {
             List<SendMessageResponseDto> models = new List<SendMessageResponseDto>();
 
@@ -840,9 +852,9 @@ namespace WhatsAppBridge.Handler
                 int batchSize = _whatsAppConfigurationSetting.Value.SendMessageBatchSize;
                 var batches = model.PhoneNumbers.ChunkBy(batchSize);
 
-                _logger.LogInformation("Calling function HandleSendBatchTemplateMessage with received object {object} with batch size {batchSize} and totalbatchCount {totalbatchCount}", JsonConvert.SerializeObject(model), batchSize, batches.Count);
+                _logger.LogInformation("Calling function HandleSendInteractiveMessage with received object {object} with batch size {batchSize} and totalbatchCount {totalbatchCount}", JsonConvert.SerializeObject(model), batchSize, batches.Count);
 
-                var template = GetTemplateContent(model);
+                var interactive = GetInteractiveMessageContent(model);
 
                 var senderInfo = await _integrationHandler.GetSenderInformation(model.ClientId, model.SenderNameId);
                 if (senderInfo == null)
@@ -870,19 +882,19 @@ namespace WhatsAppBridge.Handler
                             {
                                 method = "POST",
                                 relative_url = $"{senderInfo.PhoneNumberId}/messages",
-                                body = $"messaging_product=whatsapp&recipient_type=individual&to={recipient}&type={template.type}&{template.type}={JsonConvert.SerializeObject(template.template)}"
+                                body = $"messaging_product=whatsapp&recipient_type=individual&to={recipient}&type={interactive.type}&{interactive.type}={JsonConvert.SerializeObject(interactive.interactive)}"
                             }).ToList()
                         };
 
                         requestStr = JsonConvert.SerializeObject(batchRequest);
 
-                        _logger.LogInformation("Created Batch Request in function HandleSendBatchTemplateMessage with received object {object} with batch size {batchSize} and totalbatchCount {totalbatchCount} and batchIndex {batchIndex} and batchRequest {batchRequest}", JsonConvert.SerializeObject(model), batchSize, batches.Count, (i + 1), requestStr);
+                        _logger.LogInformation("Created Batch Request in function HandleSendInteractiveMessage with received object {object} with batch size {batchSize} and totalbatchCount {totalbatchCount} and batchIndex {batchIndex} and batchRequest {batchRequest}", JsonConvert.SerializeObject(model), batchSize, batches.Count, (i + 1), requestStr);
 
                         // Send the batch request   
                         var resp = await _httpClient.PostAsync("", new StringContent(requestStr, null, "application/json"));
                         responseStr = await resp.Content.ReadAsStringAsync();
 
-                        _logger.LogInformation("Received Batch Response in function HandleSendBatchTemplateMessage with received object {object} with batch size {batchSize} and totalbatchCount {totalbatchCount} and batchIndex {batchIndex} and batchRequest {batchRequest} and batchResponse {batchResponse}", JsonConvert.SerializeObject(model), batchSize, batches.Count, (i + 1), requestStr, responseStr);
+                        _logger.LogInformation("Received Batch Response in function HandleSendInteractiveMessage with received object {object} with batch size {batchSize} and totalbatchCount {totalbatchCount} and batchIndex {batchIndex} and batchRequest {batchRequest} and batchResponse {batchResponse}", JsonConvert.SerializeObject(model), batchSize, batches.Count, (i + 1), requestStr, responseStr);
 
                         var responseModel = JsonConvert.DeserializeObject<List<BatchMessageResponseModel>>(responseStr);
                         for (int j = 0; j < batch.Count; j++)
@@ -923,16 +935,16 @@ namespace WhatsAppBridge.Handler
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError("Exception occurred {exception} when executing function HandleSendBatchTemplateMessage with received object {object} with batch size {batchSize} and batchCount {batchCount} and batchIndex {batchIndex} and batchRequest {batchRequest} and batchResponse {batchResponse}", ex, JsonConvert.SerializeObject(model), batchSize, batches.Count, i, requestStr, responseStr);
+                        _logger.LogError("Exception occurred {exception} when executing function HandleSendInteractiveMessage with received object {object} with batch size {batchSize} and batchCount {batchCount} and batchIndex {batchIndex} and batchRequest {batchRequest} and batchResponse {batchResponse}", ex, JsonConvert.SerializeObject(model), batchSize, batches.Count, i, requestStr, responseStr);
                     }
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError("Exception occurred {exception} when executing function HandleSendBatchTemplateMessage with received object {object}", ex, JsonConvert.SerializeObject(model));
+                _logger.LogError("Exception occurred {exception} when executing function HandleSendInteractiveMessage with received object {object}", ex, JsonConvert.SerializeObject(model));
             }
 
-            _logger.LogInformation("Execution ends for function HandleSendBatchTemplateMessage with received object {object} and response {response}", JsonConvert.SerializeObject(model), JsonConvert.SerializeObject(models));
+            _logger.LogInformation("Execution ends for function HandleSendInteractiveMessage with received object {object} and response {response}", JsonConvert.SerializeObject(model), JsonConvert.SerializeObject(models));
 
             if (!models.Any())
             {
@@ -953,43 +965,9 @@ namespace WhatsAppBridge.Handler
             };
         }
 
-        /// <summary>
-        /// Handle media upload
-        /// </summary>
-        /// <param name="model"></param>
-        /// <returns></returns>
-        /// <exception cref="BadHttpRequestException"></exception>
-        public async Task<ApiResult> HandleMediaUpload(UploadMediaDto model)
-        {
-            _logger.LogInformation("Calling function HandleMediaUpload with received payload {payload}", JsonConvert.SerializeObject(model));
+        #endregion
 
-            var senderInfo = await _integrationHandler.GetSenderInformation(model.ClientId, model.SenderNameId);
-            if (senderInfo == null)
-            {
-                return new ApiResult
-                {
-                    StatusCode = 404,
-                    Message = $"Sender not found with clientId: {model.ClientId} and senderId: {model.SenderNameId}"
-                };
-            }
-
-            _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {senderInfo.AccessToken}");
-
-            List<UploadMediaResultDto> results = new List<UploadMediaResultDto>();
-            foreach (var item in model.Medias)
-            {
-                var media = await UploadMedia(senderInfo.PhoneNumberId, item);
-                results.Add(media);
-            }
-
-            return new ApiResult
-            {
-                Success = true,
-                Result = results,
-                Message = "Media(s) processed successfully",
-                StatusCode = 200
-            };
-        }
+        #region Templates
 
         /// <summary>
         /// Handle message template OPS
@@ -1288,6 +1266,180 @@ namespace WhatsAppBridge.Handler
                 Message = "Something went wrong"
             };
         }
+
+        /// <summary>
+        /// Send batch template messages
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
+        public async Task<ApiResult> HandleSendBatchTemplateMessage(SendMessageTemplateRequestDto model)
+        {
+            List<SendMessageResponseDto> models = new List<SendMessageResponseDto>();
+
+            try
+            {
+                model.PhoneNumbers = model.PhoneNumbers.Where(x => !String.IsNullOrWhiteSpace(x)).Select(x => x.Replace("+", "").Trim()).ToList();
+                int batchSize = _whatsAppConfigurationSetting.Value.SendMessageBatchSize;
+                var batches = model.PhoneNumbers.ChunkBy(batchSize);
+
+                _logger.LogInformation("Calling function HandleSendBatchTemplateMessage with received object {object} with batch size {batchSize} and totalbatchCount {totalbatchCount}", JsonConvert.SerializeObject(model), batchSize, batches.Count);
+
+                var template = GetTemplateContent(model);
+
+                var senderInfo = await _integrationHandler.GetSenderInformation(model.ClientId, model.SenderNameId);
+                if (senderInfo == null)
+                {
+                    return new ApiResult
+                    {
+                        StatusCode = 404,
+                        Message = $"Client not found with clientId: {model.ClientId}"
+                    };
+                }
+
+                _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {senderInfo.AccessToken}");
+
+                for (int i = 0; i < batches.Count; i++)
+                {
+                    string requestStr = String.Empty;
+                    string responseStr = String.Empty;
+
+                    try
+                    {
+                        var batch = batches[i];
+                        var batchRequest = new BatchMessageRequestModel
+                        {
+                            batch = batch.Select(recipient => new BatchMessageRequestModel.Batch
+                            {
+                                method = "POST",
+                                relative_url = $"{senderInfo.PhoneNumberId}/messages",
+                                body = $"messaging_product=whatsapp&recipient_type=individual&to={recipient}&type={template.type}&{template.type}={JsonConvert.SerializeObject(template.template)}"
+                            }).ToList()
+                        };
+
+                        requestStr = JsonConvert.SerializeObject(batchRequest);
+
+                        _logger.LogInformation("Created Batch Request in function HandleSendBatchTemplateMessage with received object {object} with batch size {batchSize} and totalbatchCount {totalbatchCount} and batchIndex {batchIndex} and batchRequest {batchRequest}", JsonConvert.SerializeObject(model), batchSize, batches.Count, (i + 1), requestStr);
+
+                        // Send the batch request   
+                        var resp = await _httpClient.PostAsync("", new StringContent(requestStr, null, "application/json"));
+                        responseStr = await resp.Content.ReadAsStringAsync();
+
+                        _logger.LogInformation("Received Batch Response in function HandleSendBatchTemplateMessage with received object {object} with batch size {batchSize} and totalbatchCount {totalbatchCount} and batchIndex {batchIndex} and batchRequest {batchRequest} and batchResponse {batchResponse}", JsonConvert.SerializeObject(model), batchSize, batches.Count, (i + 1), requestStr, responseStr);
+
+                        var responseModel = JsonConvert.DeserializeObject<List<BatchMessageResponseModel>>(responseStr);
+                        for (int j = 0; j < batch.Count; j++)
+                        {
+                            var response = responseModel[j];
+                            response.bodyResponse = JsonConvert.DeserializeObject<BatchMessageResponseModel.BodyResponse>(response.body);
+
+                            if (response.code == 200) //If success
+                            {
+                                var responseDto = new SendMessageResponseDto
+                                {
+                                    Success = true,
+                                    PhoneNumber = response.bodyResponse.contacts[0].wa_id,
+                                    WAId = response.bodyResponse.messages[0].id,
+                                    Status = response.code,
+                                    MessageId = response.bodyResponse.messages[0].id
+                                };
+
+                                models.Add(responseDto);
+                            }
+                            else
+                            {
+                                var responseDto = new SendMessageResponseDto
+                                {
+                                    Success = false,
+                                    PhoneNumber = batch[j],
+                                    WAId = String.Empty,
+                                    Status = response.bodyResponse.error.code,
+                                    MessageId = String.Empty,
+                                    Errors = new List<string> {
+                                        response.bodyResponse.error.message
+                                    }
+                                };
+
+                                models.Add(responseDto);
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError("Exception occurred {exception} when executing function HandleSendBatchTemplateMessage with received object {object} with batch size {batchSize} and batchCount {batchCount} and batchIndex {batchIndex} and batchRequest {batchRequest} and batchResponse {batchResponse}", ex, JsonConvert.SerializeObject(model), batchSize, batches.Count, i, requestStr, responseStr);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Exception occurred {exception} when executing function HandleSendBatchTemplateMessage with received object {object}", ex, JsonConvert.SerializeObject(model));
+            }
+
+            _logger.LogInformation("Execution ends for function HandleSendBatchTemplateMessage with received object {object} and response {response}", JsonConvert.SerializeObject(model), JsonConvert.SerializeObject(models));
+
+            if (!models.Any())
+            {
+                return new ApiResult
+                {
+                    StatusCode = 400,
+                    Message = "Couldn't send messages",
+                    Result = models
+                };
+            }
+
+            return new ApiResult
+            {
+                Success = true,
+                StatusCode = 200,
+                Message = "Data processed succesfully",
+                Result = models
+            };
+        }
+
+        #endregion
+
+        #region Media
+
+        /// <summary>
+        /// Handle media upload
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
+        /// <exception cref="BadHttpRequestException"></exception>
+        public async Task<ApiResult> HandleMediaUpload(UploadMediaDto model)
+        {
+            _logger.LogInformation("Calling function HandleMediaUpload with received payload {payload}", JsonConvert.SerializeObject(model));
+
+            var senderInfo = await _integrationHandler.GetSenderInformation(model.ClientId, model.SenderNameId);
+            if (senderInfo == null)
+            {
+                return new ApiResult
+                {
+                    StatusCode = 404,
+                    Message = $"Sender not found with clientId: {model.ClientId} and senderId: {model.SenderNameId}"
+                };
+            }
+
+            _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {senderInfo.AccessToken}");
+
+            List<UploadMediaResultDto> results = new List<UploadMediaResultDto>();
+            foreach (var item in model.Medias)
+            {
+                var media = await UploadMedia(senderInfo.PhoneNumberId, item);
+                results.Add(media);
+            }
+
+            return new ApiResult
+            {
+                Success = true,
+                Result = results,
+                Message = "Media(s) processed successfully",
+                StatusCode = 200
+            };
+        }
+
+        #endregion
+
+        #region Carousel
 
         /// <summary>
         /// Handle carousel template OPS
@@ -1629,138 +1781,315 @@ namespace WhatsAppBridge.Handler
             return null;
         }
 
+        #endregion
+
+        #region Flows
+
         /// <summary>
-        /// Send interactive message
+        /// Handle flow OPS
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
-        /// <summary>
-        /// Send interactive message
-        /// </summary>
-        /// <param name="model"></param>
-        /// <returns></returns>
-        public async Task<ApiResult> HandleSendInteractiveMessage(SendInteractiveMessageRequestDto model)
+        public async Task<ApiResult> HandleFlowOps(CreateFlowRequestDto model)
         {
-            List<SendMessageResponseDto> models = new List<SendMessageResponseDto>();
+            string requestStr = String.Empty;
+            string responseStr = String.Empty;
+            string filepath = String.Empty;
 
             try
             {
-                model.PhoneNumbers = model.PhoneNumbers.Where(x => !String.IsNullOrWhiteSpace(x)).Select(x => x.Replace("+", "").Trim()).ToList();
-                int batchSize = _whatsAppConfigurationSetting.Value.SendMessageBatchSize;
-                var batches = model.PhoneNumbers.ChunkBy(batchSize);
+                //Replace empty spaces in flow name with _
+                model.Name = (model.Name ?? "").Replace(" ", "_").ToLower().Trim();
+                model.Category = (model.Category ?? "").Replace(" ", "_").ToLower().Trim();
+                model.EndpointUrl = (model.EndpointUrl ?? "").ToLower().Trim();
 
-                _logger.LogInformation("Calling function HandleSendInteractiveMessage with received object {object} with batch size {batchSize} and totalbatchCount {totalbatchCount}", JsonConvert.SerializeObject(model), batchSize, batches.Count);
+                _logger.LogInformation("Calling function HandleFlowOps with received object {object}", JsonConvert.SerializeObject(model));
 
-                var interactive = GetInteractiveMessageContent(model);
+                var senderNameInfo = await _integrationHandler.GetSenderInformation(model.ClientId, model.SenderNameId);
+                if (senderNameInfo == null)
+                    return new ApiResult { StatusCode = 404, Message = $"Sender name not found with clientId: {model.ClientId} and senderNameId: {model.SenderNameId}" };
 
-                var senderInfo = await _integrationHandler.GetSenderInformation(model.ClientId, model.SenderNameId);
-                if (senderInfo == null)
+                _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {senderNameInfo.AccessToken}");
+
+                // Send the update flow request   
+                if (!String.IsNullOrWhiteSpace(model.FlowId))
                 {
-                    return new ApiResult
+                    //Flow Path
+                    var flowDirectory = String.Concat(_webHostEnvironment.ContentRootPath, "Flow");
+                    if (!Directory.Exists(flowDirectory))
+                        Directory.CreateDirectory(flowDirectory);
+
+                    // Get the file name from the Uri
+                    string filename = String.Concat(Guid.NewGuid().ToString(), ".json"); // Path.GetFileName(model.File.FileName);
+                    filepath = Path.Combine(flowDirectory, filename);
+
+                    await using var savefileStream = new FileStream(filepath, FileMode.Create, FileAccess.Write);
+                    byte[] data = Encoding.UTF8.GetBytes(model.FlowJson);
+                    savefileStream.Write(data, 0, data.Length);
+
+                    savefileStream.Close();
+                    savefileStream.Dispose();
+
+                    var request = new HttpRequestMessage(HttpMethod.Post, $"{model.FlowId}/assets");
+
+                    // Prepare file content
+                    using (var content = new MultipartFormDataContent())
                     {
-                        StatusCode = 404,
-                        Message = $"Client not found with clientId: {model.ClientId}"
-                    };
-                }
+                        var fileInfo = new FileInfo(filepath);
 
-                _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {senderInfo.AccessToken}");
+                        string contentType = String.Empty;
+                        new FileExtensionContentTypeProvider().TryGetContentType(fileInfo.FullName, out contentType);
 
-                for (int i = 0; i < batches.Count; i++)
-                {
-                    string requestStr = String.Empty;
-                    string responseStr = String.Empty;
+                        // Read the file from the local path
+                        var fileStream = new FileStream(filepath, FileMode.Open, FileAccess.Read);
+                        var fileContent = new StreamContent(fileStream);
+                        fileContent.Headers.ContentType = new MediaTypeHeaderValue(contentType);
 
-                    try
-                    {
-                        var batch = batches[i];
-                        var batchRequest = new BatchMessageRequestModel
+                        // Add file content to the form-data
+                        content.Add(fileContent, "file", Path.GetFileName(filepath));
+
+                        // Add other form data parameters   
+                        content.Add(new StringContent("flow.json"), "name");
+                        content.Add(new StringContent("FLOW_JSON"), "asset_type");
+
+                        // Assign content to the request
+                        request.Content = content;
+
+                        // Send the request and get the response
+                        var response = await _httpClient.SendAsync(request);
+
+                        // Read the response content
+                        responseStr = await response.Content.ReadAsStringAsync();
+
+                        _logger.LogInformation("Received Update Flow Response in function HandleFlowOps with received object {object} with response {response}", JsonConvert.SerializeObject(model), responseStr);
+
+                        var updateFlow = JsonConvert.DeserializeObject<FlowAssetUploadResponse>(responseStr);
+                        if (updateFlow != null)
                         {
-                            batch = batch.Select(recipient => new BatchMessageRequestModel.Batch
+                            if (updateFlow.error != null)
                             {
-                                method = "POST",
-                                relative_url = $"{senderInfo.PhoneNumberId}/messages",
-                                body = $"messaging_product=whatsapp&recipient_type=individual&to={recipient}&type={interactive.type}&{interactive.type}={JsonConvert.SerializeObject(interactive.interactive)}"
-                            }).ToList()
-                        };
+                                StringBuilder err = new StringBuilder();
+                                if (!String.IsNullOrWhiteSpace(updateFlow.error.message))
+                                    err.Append(String.Concat(updateFlow.error.message, ","));
+                                if (!String.IsNullOrWhiteSpace(updateFlow.error.error_user_title))
+                                    err.Append(String.Concat(updateFlow.error.error_user_title, ","));
+                                if (!String.IsNullOrWhiteSpace(updateFlow.error.error_user_msg))
+                                    err.Append(String.Concat(updateFlow.error.error_user_msg, ","));
 
-                        requestStr = JsonConvert.SerializeObject(batchRequest);
-
-                        _logger.LogInformation("Created Batch Request in function HandleSendInteractiveMessage with received object {object} with batch size {batchSize} and totalbatchCount {totalbatchCount} and batchIndex {batchIndex} and batchRequest {batchRequest}", JsonConvert.SerializeObject(model), batchSize, batches.Count, (i + 1), requestStr);
-
-                        // Send the batch request   
-                        var resp = await _httpClient.PostAsync("", new StringContent(requestStr, null, "application/json"));
-                        responseStr = await resp.Content.ReadAsStringAsync();
-
-                        _logger.LogInformation("Received Batch Response in function HandleSendInteractiveMessage with received object {object} with batch size {batchSize} and totalbatchCount {totalbatchCount} and batchIndex {batchIndex} and batchRequest {batchRequest} and batchResponse {batchResponse}", JsonConvert.SerializeObject(model), batchSize, batches.Count, (i + 1), requestStr, responseStr);
-
-                        var responseModel = JsonConvert.DeserializeObject<List<BatchMessageResponseModel>>(responseStr);
-                        for (int j = 0; j < batch.Count; j++)
-                        {
-                            var response = responseModel[j];
-                            response.bodyResponse = JsonConvert.DeserializeObject<BatchMessageResponseModel.BodyResponse>(response.body);
-
-                            if (response.code == 200) //If success
-                            {
-                                var responseDto = new SendMessageResponseDto
+                                return new ApiResult
                                 {
-                                    Success = true,
-                                    PhoneNumber = response.bodyResponse.contacts[0].wa_id,
-                                    WAId = response.bodyResponse.messages[0].id,
-                                    Status = response.code,
-                                    MessageId = response.bodyResponse.messages[0].id
+                                    StatusCode = 400,
+                                    Message = err.ToString().TrimEnd(',')
                                 };
-
-                                models.Add(responseDto);
                             }
-                            else
+                            else if (updateFlow.validation_errors != null && updateFlow.validation_errors.Count > 0)
                             {
-                                var responseDto = new SendMessageResponseDto
+                                return new ApiResult
                                 {
-                                    Success = false,
-                                    PhoneNumber = batch[j],
-                                    WAId = String.Empty,
-                                    Status = response.bodyResponse.error.code,
-                                    MessageId = String.Empty,
-                                    Errors = new List<string> {
-                                        response.bodyResponse.error.message
+                                    StatusCode = 400,
+                                    Message = "Cannot update flow",
+                                    Result = new
+                                    {
+                                        Id = model.FlowId,
+                                        ValidationErrors = updateFlow.validation_errors
                                     }
                                 };
+                            }
+                            else //Get flow by id
+                            {
+                                response = await _httpClient.GetAsync($"/{model.FlowId}");
+                                var resp = await response.Content.ReadAsStringAsync();
+                                var flow = JsonConvert.DeserializeObject<FlowByIdResponse>(resp);
 
-                                models.Add(responseDto);
+                                return new ApiResult
+                                {
+                                    Success = true,
+                                    StatusCode = 200,
+                                    Message = "Flow updated successfully",
+                                    Result = new
+                                    {
+                                        Id = flow.id,
+                                        Name = flow.name,
+                                        Status = flow.status, //DRAFT AND PUBLISHED
+                                        categories = flow.categories,
+                                        ValidationErrors = flow.validation_errors
+                                    }
+                                };
                             }
                         }
                     }
-                    catch (Exception ex)
+                }
+                else //Send the create flow request
+                {
+                    var flowRequest = new CreateFlowRequestModel
                     {
-                        _logger.LogError("Exception occurred {exception} when executing function HandleSendInteractiveMessage with received object {object} with batch size {batchSize} and batchCount {batchCount} and batchIndex {batchIndex} and batchRequest {batchRequest} and batchResponse {batchResponse}", ex, JsonConvert.SerializeObject(model), batchSize, batches.Count, i, requestStr, responseStr);
+                        name = model.Name,
+                        categories = new List<string> { model.Category },
+                        endpoint_uri = model.EndpointUrl,
+                        flow_json = model.FlowJson
+                    };
+
+                    requestStr = JsonConvert.SerializeObject(flowRequest);
+
+                    var resp = await _httpClient.PostAsync($"/{senderNameInfo.BusinessAccountId}/flows", new StringContent(requestStr, null, "application/json"));
+                    responseStr = await resp.Content.ReadAsStringAsync();
+
+                    _logger.LogInformation("Received Create Flow Response in function HandleFlowOps with received object {object} with request {request} and response {response}", JsonConvert.SerializeObject(model), requestStr, responseStr);
+
+                    var createFlow = JsonConvert.DeserializeObject<CreateFlowResponseModel>(responseStr);
+                    if (createFlow != null)
+                    {
+                        if (createFlow.error != null)
+                        {
+                            StringBuilder err = new StringBuilder();
+                            if (!String.IsNullOrWhiteSpace(createFlow.error.message))
+                                err.Append(String.Concat(createFlow.error.message, ","));
+                            if (!String.IsNullOrWhiteSpace(createFlow.error.error_user_title))
+                                err.Append(String.Concat(createFlow.error.error_user_title, ","));
+                            if (!String.IsNullOrWhiteSpace(createFlow.error.error_user_msg))
+                                err.Append(String.Concat(createFlow.error.error_user_msg, ","));
+
+                            return new ApiResult
+                            {
+                                StatusCode = 400,
+                                Message = err.ToString().TrimEnd(',')
+                            };
+                        }
+                        else //Get flow by id
+                        {
+                            var response = await _httpClient.GetAsync($"/{createFlow.id}");
+                            var content = await response.Content.ReadAsStringAsync();
+                            var flow = JsonConvert.DeserializeObject<FlowByIdResponse>(content);
+
+                            return new ApiResult
+                            {
+                                Success = true,
+                                StatusCode = 200,
+                                Message = "Flow created successfully",
+                                Result = new
+                                {
+                                    Id = flow.id,
+                                    Name = flow.name,
+                                    Status = flow.status,
+                                    categories = flow.categories,
+                                    ValidationErrors = flow.validation_errors
+                                }
+                            };
+                        }
                     }
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError("Exception occurred {exception} when executing function HandleSendInteractiveMessage with received object {object}", ex, JsonConvert.SerializeObject(model));
+                _logger.LogError("Exception occurred {exception} when executing function HandleFlowOps with received object {object} with request {request} and response {response}", ex, JsonConvert.SerializeObject(model), requestStr, responseStr);
             }
-
-            _logger.LogInformation("Execution ends for function HandleSendInteractiveMessage with received object {object} and response {response}", JsonConvert.SerializeObject(model), JsonConvert.SerializeObject(models));
-
-            if (!models.Any())
+            finally //Delete the saved flow JSON file
             {
-                return new ApiResult
-                {
-                    StatusCode = 400,
-                    Message = "Couldn't send messages",
-                    Result = models
-                };
+                if (!String.IsNullOrWhiteSpace(filepath) && File.Exists(filepath))
+                    File.Delete(filepath);
             }
 
             return new ApiResult
             {
-                Success = true,
-                StatusCode = 200,
-                Message = "Data processed succesfully",
-                Result = models
+                StatusCode = 400,
+                Message = "Something went wrong"
             };
         }
+
+        /// <summary>
+        /// Handle publish flow
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
+        public async Task<ApiResult> HandlePublishFlow(PublishFlowRequestDto model)
+        {
+            string requestStr = String.Empty;
+            string responseStr = String.Empty;
+
+            try
+            {
+
+                _logger.LogInformation("Calling function HandlePublishFlow with received object {object}", JsonConvert.SerializeObject(model));
+
+                var senderNameInfo = await _integrationHandler.GetSenderInformation(model.ClientId, model.SenderNameId);
+                if (senderNameInfo == null)
+                    return new ApiResult { StatusCode = 404, Message = $"Sender name not found with clientId: {model.ClientId} and senderNameId: {model.SenderNameId}" };
+
+                _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {senderNameInfo.AccessToken}");
+
+                var resp = await _httpClient.PostAsync($"/{model.FlowId}/publish", new StringContent(requestStr, null, "application/json"));
+                responseStr = await resp.Content.ReadAsStringAsync();
+
+                _logger.LogInformation("Received Publish Flow Response in function HandlePublishFlow with received object {object} with request {request} and response {response}", JsonConvert.SerializeObject(model), requestStr, responseStr);
+
+                var publishFlow = JsonConvert.DeserializeObject<PublishFlowResponseModel>(responseStr);
+                if (publishFlow != null)
+                {
+                    if (publishFlow.error != null)
+                    {
+                        StringBuilder err = new StringBuilder();
+                        if (!String.IsNullOrWhiteSpace(publishFlow.error.message))
+                            err.Append(String.Concat(publishFlow.error.message, ","));
+                        if (!String.IsNullOrWhiteSpace(publishFlow.error.error_user_title))
+                            err.Append(String.Concat(publishFlow.error.error_user_title, ","));
+                        if (!String.IsNullOrWhiteSpace(publishFlow.error.error_user_msg))
+                            err.Append(String.Concat(publishFlow.error.error_user_msg, ","));
+
+                        return new ApiResult
+                        {
+                            StatusCode = 400,
+                            Message = err.ToString().TrimEnd(',')
+                        };
+                    }
+                    else if (publishFlow.validation_errors != null && publishFlow.validation_errors.Count > 0)
+                    {
+                        return new ApiResult
+                        {
+                            StatusCode = 400,
+                            Message = "Cannot publish flow",
+                            Result = new
+                            {
+                                Id = model.FlowId,
+                                ValidationErrors = publishFlow.validation_errors
+                            }
+                        };
+                    }
+                    else //Get flow by id
+                    {
+                        var response = await _httpClient.GetAsync($"/{model.FlowId}");
+                        var content = await response.Content.ReadAsStringAsync();
+                        var flow = JsonConvert.DeserializeObject<FlowByIdResponse>(content);
+
+                        return new ApiResult
+                        {
+                            Success = true,
+                            StatusCode = 200,
+                            Message = "Flow published successfully",
+                            Result = new
+                            {
+                                Id = flow.id,
+                                Name = flow.name,
+                                Status = flow.status,
+                                categories = flow.categories,
+                                ValidationErrors = flow.validation_errors
+                            }
+                        };
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Exception occurred {exception} when executing function HandlePublishFlow with received object {object} with request {request} and response {response}", ex, JsonConvert.SerializeObject(model), requestStr, responseStr);
+            }
+
+            return new ApiResult
+            {
+                StatusCode = 400,
+                Message = "Something went wrong"
+            };
+        }
+
+        #endregion
 
         #endregion
     }

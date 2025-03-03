@@ -1,8 +1,11 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using WhatsAppBridge.Crypto.Flow;
 using WhatsAppBridge.Handler;
+using WhatsAppBridge.Models;
 using WhatsAppBridge.Models.WhatsApp.Webhook;
 using WhatsAppBridge.Settings;
 
@@ -16,14 +19,17 @@ namespace WhatsAppBridge.Controllers
         private readonly ILogger<WebhookController> _logger;
         private readonly IOptions<WhatsAppConfigurationSetting> _whatsAppConfigurationSetting;
         private readonly WhatsAppWebhookHandler _whatsAppWebhookHandler;
+        private readonly IntegrationHandler _integrationHandler;
 
         public WebhookController(ILogger<WebhookController> logger,
             IOptions<WhatsAppConfigurationSetting> whatsAppConfigurationSetting,
-            WhatsAppWebhookHandler whatsAppWebhookHandler)
+            WhatsAppWebhookHandler whatsAppWebhookHandler,
+            IntegrationHandler integrationHandler)
         {
             _logger = logger;
             _whatsAppConfigurationSetting = whatsAppConfigurationSetting;
             _whatsAppWebhookHandler = whatsAppWebhookHandler;
+            _integrationHandler = integrationHandler;
         }
 
         [HttpGet]
@@ -50,7 +56,7 @@ namespace WhatsAppBridge.Controllers
 
         [HttpPost]
         public async Task<IActionResult> Post(string clientId, object payload)
-        { 
+        {
             var data = System.Text.Json.JsonSerializer.Serialize(payload);
             _logger.LogInformation("Facebook webhook received with clientId={clientId} and data={data}", clientId, data);
 
@@ -81,6 +87,32 @@ namespace WhatsAppBridge.Controllers
 
             return Ok();
 
+        }
+
+        [HttpPost("FlowHealthCheck")]
+        public async Task<IActionResult> FlowHealthCheck(string clientId, string senderId, object payload)
+        {
+            var data = System.Text.Json.JsonSerializer.Serialize(payload);
+            _logger.LogInformation("Facebook flow healthcheck webhook received with clientId={clientId} and senderId={senderId} and data={data}", clientId, senderId, data);
+
+            var PASSPHRASE = _whatsAppConfigurationSetting.Value.WebhookVerificationToken;
+
+            var senderInfo = await _integrationHandler.GetSenderInformation(clientId, senderId);
+            if (senderInfo == null)
+                return BadRequest(new ApiResult { StatusCode = 404, Message = $"Sender not found with clientId: {clientId} and senderNameId:{senderId}" });
+
+            var PRIVATE_KEY = senderInfo.PrivateCertificate;
+
+            var model = JsonConvert.DeserializeObject<FlowHealthCheckModel>(data);
+            if (model == null)
+                return BadRequest("Cannot parse received facebook flow webhook data object");
+
+            var decrypted = EncryptionUtils.DecryptRequest(model.encrypted_aes_key, model.encrypted_flow_data, model.initial_vector, PRIVATE_KEY, PASSPHRASE);
+
+            var response = new { data = new { status = "active" } };
+            var encryptedResponse = EncryptionUtils.EncryptResponse(response, decrypted.aesKeyBytes, decrypted.initialVectorBytes);
+
+            return Ok(encryptedResponse);
         }
     }
 }

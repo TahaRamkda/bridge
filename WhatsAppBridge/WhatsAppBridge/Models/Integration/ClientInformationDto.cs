@@ -20,5 +20,7 @@
         public string PhoneNumber { get; set; }
         public string BusinessAccountId { get; set; }
         public string AccessToken { get; set; }
+        public string PublicCertificate { get; set; }
+        public string PrivateCertificate { get; set; }
     }
 }
