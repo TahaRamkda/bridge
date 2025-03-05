@@ -402,59 +402,77 @@ namespace WhatsAppBridge.Handler
             }
 
             //BUTTONS
-            if (model.Buttons.Any(x => x.Type.ToUpper() == TemplateButtonTypeModel.URL)) //BUTTON URL
+            if (model.Buttons != null && model.Buttons.Count() > 0)
             {
-                interactive.interactive.type = "cta_url";
-                var button = model.Buttons.FirstOrDefault(x => x.Type.ToUpper() == TemplateButtonTypeModel.URL);
-
-                interactive.interactive.action = new
+                if (model.Buttons.Any(x => x.Type.ToUpper() == TemplateButtonTypeModel.URL)) //BUTTON URL
                 {
-                    name = "cta_url",
-                    parameters = new
+                    interactive.interactive.type = "cta_url";
+                    var button = model.Buttons.FirstOrDefault(x => x.Type.ToUpper() == TemplateButtonTypeModel.URL);
+
+                    interactive.interactive.action = new
                     {
-                        display_text = button.Text.EncodeSpecialCharacters(),
-                        url = button.Url.EncodeSpecialCharacters()
+                        name = "cta_url",
+                        parameters = new
+                        {
+                            display_text = button.Text.EncodeSpecialCharacters(),
+                            url = button.Url.EncodeSpecialCharacters()
+                        }
+                    };
+                }
+                else if (model.Buttons.Count <= 3) //BUTTON LIST WITH LESS THAN OR EQUAL TO 3 BUTTONS
+                {
+                    interactive.interactive.type = "button";
+                    interactive.interactive.action = new
+                    {
+                        buttons = new List<object>()
+                    };
+
+                    foreach (var button in model.Buttons)
+                    {
+                        interactive.interactive.action.buttons.Add(new
+                        {
+                            type = "reply",
+                            reply = new
+                            {
+                                id = button.Id.EncodeSpecialCharacters(),
+                                title = button.Text.EncodeSpecialCharacters()
+                            }
+                        });
                     }
-                };
-            }
-            else if (model.Buttons.Count <= 3) //BUTTON LIST WITH LESS THAN OR EQUAL TO 3 BUTTONS
-            {
-                interactive.interactive.type = "button";
-                interactive.interactive.action = new
+                }
+                else if (model.Buttons.Count > 3) //BUTTON LIST WITH MORE THAN 3 BUTTONS
                 {
-                    buttons = new List<object>()
-                };
-
-                foreach (var button in model.Buttons)
-                {
-                    interactive.interactive.action.buttons.Add(new
+                    dynamic rows = new List<object>();
+                    foreach (var button in model.Buttons)
                     {
-                        type = "reply",
-                        reply = new
+                        rows.Add(new
                         {
                             id = button.Id.EncodeSpecialCharacters(),
                             title = button.Text.EncodeSpecialCharacters()
-                        }
-                    });
+                        });
+                    }
+
+                    interactive.interactive.type = "list";
+                    interactive.interactive.action = new
+                    {
+                        button = "Choose options",
+                        sections = new List<object> { new { rows = rows } }
+                    };
                 }
             }
-            else if (model.Buttons.Count > 3) //BUTTON LIST WITH MORE THAN 3 BUTTONS
+            else if (model.FlowAction != null) //FLOW
             {
-                dynamic rows = new List<object>();
-                foreach (var button in model.Buttons)
-                {
-                    rows.Add(new
-                    {
-                        id = button.Id.EncodeSpecialCharacters(),
-                        title = button.Text.EncodeSpecialCharacters()
-                    });
-                }
-
-                interactive.interactive.type = "list";
+                interactive.interactive.type = "flow";
                 interactive.interactive.action = new
                 {
-                    button = "Choose options",
-                    sections = new List<object> { new { rows = rows } }
+                    name = "flow",
+                    parameters = new
+                    {
+                        flow_message_version = model.FlowAction.Version,
+                        flow_id = model.FlowAction.FlowId,
+                        flow_cta = model.FlowAction.ButtonText,
+                        flow_token = model.FlowAction?.Token
+                    }
                 };
             }
 

@@ -121,11 +121,11 @@ namespace WhatsAppBridge.Controllers
                 });
             }
 
-            if (!model.Buttons.Any())
+            if ((model.Buttons == null || !model.Buttons.Any()) && model.FlowAction == null)
             {
                 return Ok(new ApiResult
                 {
-                    Message = "Buttons should be available",
+                    Message = "Either buttons or flow should be sent",
                     StatusCode = StatusCodes.Status400BadRequest
                 });
             }
