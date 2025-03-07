@@ -179,6 +179,8 @@ namespace WhatsAppBridge.Models.WhatsApp.Webhook
                 public string type { get; set; }
                 public ButtonReply button_reply { get; set; }
                 public ListReply list_reply { get; set; }
+                public NFMReply nfm_reply { get; set; }
+
                 public class ButtonReply
                 {
                     public string id { get; set; }
@@ -189,6 +191,13 @@ namespace WhatsAppBridge.Models.WhatsApp.Webhook
                 {
                     public string id { get; set; }
                     public string title { get; set; }
+                }
+
+                public class NFMReply
+                {
+                    public string response_json { get; set; }
+                    public string body { get; set; }
+                    public string name { get; set; }
                 }
             }
 

@@ -1,4 +1,6 @@
-﻿namespace WhatsAppBridge.Models.Integration
+﻿using WhatsAppBridge.Models.Integration.Flow;
+
+namespace WhatsAppBridge.Models.Integration
 {
     public class MessageReceiveDto
     {
@@ -27,6 +29,7 @@
         public ButtonReply buttonReply { get; set; }
         public ListReply listReply { get; set; }
         public Reaction reaction { get; set; }
+        public FlowResponse flowResponse{ get; set; }
 
         public class PhoneNumber
         {

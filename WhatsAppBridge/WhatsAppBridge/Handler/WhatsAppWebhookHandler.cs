@@ -1,9 +1,11 @@
 ﻿using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using System.Text.Json;
 using WhatsAppBridge.Controllers;
 using WhatsAppBridge.Helpers;
 using WhatsAppBridge.Models;
 using WhatsAppBridge.Models.Integration;
+using WhatsAppBridge.Models.Integration.Flow;
 using WhatsAppBridge.Models.WhatsApp;
 using WhatsAppBridge.Models.WhatsApp.Webhook;
 using WhatsAppBridge.Settings;
@@ -14,11 +16,17 @@ namespace WhatsAppBridge.Handler
 {
     public partial class WhatsAppWebhookHandler
     {
+        #region Fields
+
         private readonly ILogger<WhatsAppWebhookHandler> _logger;
         private readonly IOptions<WhatsAppConfigurationSetting> _whatsAppConfigurationSetting;
         private readonly IntegrationHandler _integrationHandler;
         private readonly HttpClient _httpClient;
         private readonly string baseUrl = String.Empty;
+
+        #endregion
+
+        #region Ctor
 
         public WhatsAppWebhookHandler(ILogger<WhatsAppWebhookHandler> logger,
             IOptions<WhatsAppConfigurationSetting> whatsAppConfigurationSetting,
@@ -31,6 +39,74 @@ namespace WhatsAppBridge.Handler
             _httpClient = httpClientFactory.CreateClient(HttpClientType.facebook_graph_api);
             baseUrl = _httpClient.BaseAddress.AbsoluteUri;
         }
+
+        #endregion
+
+        #region Utilities
+
+        public FlowResponse GenerateFlowResponse(MessageUpdateWebhookModel.Message.Interactive.NFMReply reply)
+        {
+            var responseJson = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(reply.response_json);
+            Dictionary<string, string> questionMapping = new();  // Stores Questions
+            FlowResponse flowResponse = new FlowResponse();  // Stores Answers
+
+            // Step 1: Extract flow_token if present
+            if (responseJson.TryGetValue("flow_token", out var flowTokenValue) && flowTokenValue is JsonElement flowTokenElement && flowTokenElement.ValueKind == JsonValueKind.String)
+                flowResponse.FlowToken = (flowTokenElement.GetString() ?? "").Replace(" ", "").Trim();
+
+            // Step 2: Store all questions (keys ending in "_Q")
+            foreach (var item in responseJson)
+            {
+                if (item.Key.EndsWith("_Q") && item.Value is JsonElement questionElement && questionElement.ValueKind == JsonValueKind.String)
+                {
+                    string baseKey = item.Key.Replace("_Q", ""); // Remove "_Q" for matching
+                    questionMapping[baseKey] = questionElement.GetString();
+                }
+            }
+
+            // Step 3: Match responses to questions and store question and answer keys
+            foreach (var questionKey in questionMapping.Keys)
+            {
+                string type = "Text"; // Default type
+                string textResponse = String.Empty;
+                List<string> checkboxResponse = new List<string>();
+
+                if (responseJson.TryGetValue(questionKey, out var responseValue) && responseValue is JsonElement jsonElement)
+                {
+                    if (jsonElement.ValueKind == JsonValueKind.String) // Single response
+                    {
+                        textResponse = jsonElement.GetString();
+                        type = "Text";
+                    }
+                    else if (jsonElement.ValueKind == JsonValueKind.Array) // Checkbox response (array)
+                    {
+                        checkboxResponse = new List<string>();
+                        foreach (var element in jsonElement.EnumerateArray())
+                        {
+                            checkboxResponse.Add(element.GetString());
+                        }
+                        type = "MultiSelect";
+                    }
+                }
+
+                // Add to structured response
+                flowResponse.Responses.Add(new FlowResponse.Response
+                {
+                    QuestionKey = questionKey + "_Q", // Store the question key (e.g., "Screen_One_C1_Q")
+                    AnswerKey = questionKey, // Store the answer key (e.g., "Screen_One_C1")
+                    Question = questionMapping[questionKey],
+                    Type = type,
+                    TextResponse = textResponse,
+                    CheckboxResponse = checkboxResponse
+                });
+            }
+
+            return flowResponse;
+        }
+
+        #endregion
+
+        #region Methods
 
         public async Task HandleMessageTemplateStatusUpdate(string clientId, Change change)
         {
@@ -290,6 +366,10 @@ namespace WhatsAppBridge.Handler
                                     title = message.interactive.button_reply.title
                                 };
                             }
+
+                            //If flow message received
+                            if (message.interactive.nfm_reply != null)
+                                updateDto.flowResponse = GenerateFlowResponse(message.interactive.nfm_reply);
                         }
 
                         await _integrationHandler.MessageReceiveUpdate(updateDto);
@@ -301,5 +381,7 @@ namespace WhatsAppBridge.Handler
                 _logger.LogError("Exception occurred {exception} when executing function HandleMessageStatusUpdate with received clientId {clientId} and object {object}", ex, clientId, JsonConvert.SerializeObject(change));
             }
         }
+
+        #endregion
     }
 }

@@ -168,7 +168,7 @@ namespace WhatsAppBridge.Handler
                     Category = messageTemplate.category,
                     SubCategory = messageTemplate.sub_category
                 };
-                 
+
                 if (sendRequestToIntegration)
                 {
                     string requestStr = String.Empty;
@@ -224,12 +224,17 @@ namespace WhatsAppBridge.Handler
                 {
                     var result = updateDto;
 
-                    requestStr = JsonConvert.SerializeObject(result);
-                    fullUrl = CommonHelper.GetFullUrl(baseUrl, $"/bridge/whatsappmessagereceive");
+                    requestStr = JsonConvert.SerializeObject(result, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
+
+                    string endpoint = $"/bridge/whatsappmessagereceive";
+                    if (updateDto.flowResponse != null)
+                        endpoint = $"/bridge/flowresponse";
+
+                    fullUrl = CommonHelper.GetFullUrl(baseUrl, endpoint);
 
                     _logger.LogInformation("Executing function MessageReceiveUpdate Calling Integration whatsappmessagereceive method with clientId {clientId} with url {url} and request {request}", updateDto.client_Id, fullUrl, requestStr);
 
-                    var response = await _httpClient.PostAsync($"/bridge/whatsappmessagereceive", new StringContent(requestStr, null, "application/json"));
+                    var response = await _httpClient.PostAsync(endpoint, new StringContent(requestStr, null, "application/json"));
 
                     if (!response.IsSuccessStatusCode)
                         responseStr = String.Concat("Status code: ", response.StatusCode, " | Reason: ", response.ReasonPhrase);
