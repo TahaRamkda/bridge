@@ -52,7 +52,7 @@ namespace WhatsAppBridge.Handler
 
             // Step 1: Extract flow_token if present
             if (responseJson.TryGetValue("flow_token", out var flowTokenValue) && flowTokenValue is JsonElement flowTokenElement && flowTokenElement.ValueKind == JsonValueKind.String)
-                flowResponse.FlowToken = (flowTokenElement.GetString() ?? "").Replace(" ", "").Trim();
+                flowResponse.flowToken = (flowTokenElement.GetString() ?? "").Replace(" ", "").Trim();
 
             // Step 2: Store all questions (keys ending in "_Q")
             foreach (var item in responseJson)
@@ -90,14 +90,14 @@ namespace WhatsAppBridge.Handler
                 }
 
                 // Add to structured response
-                flowResponse.Responses.Add(new FlowResponse.Response
+                flowResponse.responses.Add(new FlowResponse.Response
                 {
-                    QuestionKey = questionKey + "_Q", // Store the question key (e.g., "Screen_One_C1_Q")
-                    AnswerKey = questionKey, // Store the answer key (e.g., "Screen_One_C1")
-                    Question = questionMapping[questionKey],
-                    Type = type,
-                    TextResponse = textResponse,
-                    CheckboxResponse = checkboxResponse
+                    questionKey = questionKey + "_Q", // Store the question key (e.g., "Screen_One_C1_Q")
+                    answerKey = questionKey, // Store the answer key (e.g., "Screen_One_C1")
+                    question = questionMapping[questionKey],
+                    type = type,
+                    text = textResponse,
+                    multiSelect = checkboxResponse
                 });
             }
 

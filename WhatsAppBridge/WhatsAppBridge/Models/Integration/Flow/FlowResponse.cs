@@ -4,20 +4,25 @@
     {
         public FlowResponse()
         {
-            Responses = new List<Response>();
+            responses = new List<Response>();
         }
 
-        public string FlowToken { get; set; }
-        public List<Response> Responses { get; set; }
+        public string flowToken { get; set; }
+        public List<Response> responses { get; set; }
 
         public class Response
         {
-            public string QuestionKey { get; set; } // The key of the question (e.g., "Screen_One_C1_Q")
-            public string AnswerKey { get; set; } // The key of the answer (e.g., "Screen_One_C1")
-            public string Question { get; set; } // The actual question text
-            public string Type { get; set; } // "TextResponse" or "CheckboxResponse"
-            public string TextResponse { get; set; } // Only for text answers
-            public List<string> CheckboxResponse { get; set; } // Only for checkbox/multiple choice answers
+            public Response()
+            {
+                multiSelect = new List<string>();
+            }
+
+            public string questionKey { get; set; } // The key of the question (e.g., "Screen_One_C1_Q")
+            public string answerKey { get; set; } // The key of the answer (e.g., "Screen_One_C1")
+            public string question { get; set; } // The actual question text
+            public string type { get; set; } // "TextResponse" or "CheckboxResponse"
+            public string text { get; set; } // Only for text answers
+            public List<string> multiSelect { get; set; } // Only for checkbox/multiple choice answers
         }
     }
 }
