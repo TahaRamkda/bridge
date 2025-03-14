@@ -15,6 +15,7 @@
         public string TemplateId { get; set; }
         public string TemplateName { get; set; }
         public List<Component> Components { get; set; }
+        public FlowActionDto FlowAction { get; set; }
 
         public class Component
         {
@@ -33,6 +34,14 @@
             public string Type { get; set; }
             public string Value { get; set; }
             public int Index { get; set; }
+        }
+
+        public class FlowActionDto
+        {
+            public FlowActionDto() { }
+
+            public int Index { get; set; }
+            public string Token { get; set; }
         }
     }
 }

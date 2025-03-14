@@ -299,6 +299,29 @@ namespace WhatsAppBridge.Handler
                 }
             }
 
+            if (model.FlowAction != null)
+            {
+                //For Button we pass as index
+                var component = new SendMessageTemplateModel.Template.Component
+                {
+                    type = "BUTTON",
+                    sub_type = "flow",
+                    index = model.FlowAction.Index
+                };
+
+                component.parameters.Add(new
+                {
+                    //type = TemplateButtonTypeModel.QUICK_REPLY.ToLower(),
+                    type = "action",
+                    action = new
+                    {
+                        flow_token = model.FlowAction.Token
+                    }
+                });
+
+                template.template.components.Add(component);
+            }
+
             return template;
         }
 
@@ -1115,57 +1138,71 @@ namespace WhatsAppBridge.Handler
                     template.components.Add(footer);
                 }
 
-                //Add Buttons
-                if (model.Buttons.Any())
+                //Add Buttons or Flow
+                if (model.Buttons.Any() || model.Flow != null)
                 {
                     dynamic buttons = new ExpandoObject();
                     buttons.type = "BUTTONS";
                     buttons.buttons = new List<dynamic>();
 
-                    foreach (var button in model.Buttons)
+                    if (model.Buttons != null)
                     {
-                        button.Type = button.Type.Trim().ToUpper();
-                        if (button.Type == TemplateButtonTypeModel.QUICK_REPLY && !String.IsNullOrWhiteSpace(button.Text))
+                        foreach (var button in model.Buttons)
                         {
-                            dynamic buttonObj = new ExpandoObject();
-
-                            buttonObj.type = TemplateButtonTypeModel.QUICK_REPLY;
-                            buttonObj.text = button.Text.Trim();
-
-                            buttons.buttons.Add(buttonObj);
-                        }
-                        else if (button.Type == TemplateButtonTypeModel.PHONE_NUMBER
-                            && !String.IsNullOrWhiteSpace(button.Text)
-                            && !String.IsNullOrWhiteSpace(button.PhoneNumber))
-                        {
-                            dynamic buttonObj = new ExpandoObject();
-
-                            buttonObj.type = TemplateButtonTypeModel.PHONE_NUMBER;
-                            buttonObj.text = button.Text.Trim();
-                            buttonObj.phone_number = button.PhoneNumber.Trim();
-
-                            buttons.buttons.Add(buttonObj);
-                        }
-                        else if (button.Type == TemplateButtonTypeModel.URL
-                            && !String.IsNullOrWhiteSpace(button.Text)
-                            && !String.IsNullOrWhiteSpace(button.Url))
-                        {
-                            dynamic buttonObj = new ExpandoObject();
-
-                            buttonObj.type = TemplateButtonTypeModel.URL;
-                            buttonObj.text = button.Text.Trim();
-                            buttonObj.url = button.Url.Trim();
-
-                            if (!String.IsNullOrWhiteSpace(button.Example))
+                            button.Type = button.Type.Trim().ToUpper();
+                            if (button.Type == TemplateButtonTypeModel.QUICK_REPLY && !String.IsNullOrWhiteSpace(button.Text))
                             {
-                                buttonObj.example = new List<string>
+                                dynamic buttonObj = new ExpandoObject();
+
+                                buttonObj.type = TemplateButtonTypeModel.QUICK_REPLY;
+                                buttonObj.text = button.Text.Trim();
+
+                                buttons.buttons.Add(buttonObj);
+                            }
+                            else if (button.Type == TemplateButtonTypeModel.PHONE_NUMBER
+                                && !String.IsNullOrWhiteSpace(button.Text)
+                                && !String.IsNullOrWhiteSpace(button.PhoneNumber))
+                            {
+                                dynamic buttonObj = new ExpandoObject();
+
+                                buttonObj.type = TemplateButtonTypeModel.PHONE_NUMBER;
+                                buttonObj.text = button.Text.Trim();
+                                buttonObj.phone_number = button.PhoneNumber.Trim();
+
+                                buttons.buttons.Add(buttonObj);
+                            }
+                            else if (button.Type == TemplateButtonTypeModel.URL
+                                && !String.IsNullOrWhiteSpace(button.Text)
+                                && !String.IsNullOrWhiteSpace(button.Url))
+                            {
+                                dynamic buttonObj = new ExpandoObject();
+
+                                buttonObj.type = TemplateButtonTypeModel.URL;
+                                buttonObj.text = button.Text.Trim();
+                                buttonObj.url = button.Url.Trim();
+
+                                if (!String.IsNullOrWhiteSpace(button.Example))
+                                {
+                                    buttonObj.example = new List<string>
                                 {
                                     button.Example.Trim()
                                 };
-                            }
+                                }
 
-                            buttons.buttons.Add(buttonObj);
+                                buttons.buttons.Add(buttonObj);
+                            }
                         }
+                    }
+
+                    if (model.Flow != null)
+                    {
+                        dynamic buttonObj = new ExpandoObject();
+
+                        buttonObj.type = TemplateButtonTypeModel.FLOW;
+                        buttonObj.text = model.Flow.ButtonText?.Trim();
+                        buttonObj.flow_id = model.Flow.FlowId?.Trim();
+
+                        buttons.buttons.Add(buttonObj);
                     }
 
                     template.components.Add(buttons);

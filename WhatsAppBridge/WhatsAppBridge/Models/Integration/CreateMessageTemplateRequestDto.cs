@@ -17,6 +17,7 @@
         public BodyDto Body { get; set; }
         public FooterDto Footer { get; set; }
         public List<ButtonDto> Buttons { get; set; }
+        public FlowComponent Flow { get; set; }
 
         public class HeaderDto
         {
@@ -58,6 +59,12 @@
             public string PhoneNumber { get; set; }
             public string Url { get; set; }
             public string Example { get; set; }
+        }
+
+        public class FlowComponent
+        {
+            public string FlowId { get; set; }
+            public string ButtonText { get; set; }
         }
     }
 }
