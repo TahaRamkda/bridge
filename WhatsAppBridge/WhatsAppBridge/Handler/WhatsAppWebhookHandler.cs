@@ -112,12 +112,12 @@ namespace WhatsAppBridge.Handler
         {
             try
             {
-                _logger.LogInformation("Calling function HandleMessageTemplateStatusUpdate with received object {object}", JsonConvert.SerializeObject(change));
+                _logger.LogDebug("Calling function HandleMessageTemplateStatusUpdate with received object {object}", JsonConvert.SerializeObject(change));
 
                 TemplateUpdateWebhookModel templateUpdate = JsonConvert.DeserializeObject<TemplateUpdateWebhookModel>(JsonConvert.SerializeObject(change.value));
 
                 var fullUrl = CommonHelper.GetFullUrl(baseUrl, $"/{templateUpdate.message_template_id}");
-                _logger.LogInformation("Calling WhatsApp HandleMessageTemplateStatusUpdate method with templateId {templateId} with url {url}", templateUpdate.message_template_id, fullUrl);
+                _logger.LogDebug("Calling WhatsApp HandleMessageTemplateStatusUpdate method with templateId {templateId} with url {url}", templateUpdate.message_template_id, fullUrl);
 
                 var clientInfo = await _integrationHandler.GetClientInformation(clientId);
                 _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {clientInfo.AccessToken}");
@@ -141,7 +141,7 @@ namespace WhatsAppBridge.Handler
         {
             try
             {
-                _logger.LogInformation("Calling function HandleMessageStatusUpdate with received clientId {clientId} and object {object}", clientId, JsonConvert.SerializeObject(change));
+                _logger.LogDebug("Calling function HandleMessageStatusUpdate with received clientId {clientId} and object {object}", clientId, JsonConvert.SerializeObject(change));
 
                 MessageUpdateWebhookModel messageUpdate = JsonConvert.DeserializeObject<MessageUpdateWebhookModel>(JsonConvert.SerializeObject(change.value));
                 if (messageUpdate.statuses != null && messageUpdate.statuses.Any())

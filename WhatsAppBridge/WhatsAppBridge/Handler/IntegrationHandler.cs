@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
-using Serilog.Events;
 using WhatsAppBridge.Helpers;
 using WhatsAppBridge.Models;
 using WhatsAppBridge.Models.Integration;
@@ -45,9 +44,9 @@ namespace WhatsAppBridge.Handler
 
             try
             {
-                _logger.LogInformation("Calling function GetClientInformation with clientId {clientId}", clientId);
+                _logger.LogDebug("Calling function GetClientInformation with clientId {clientId}", clientId);
 
-                _logger.LogInformation("Executing function GetClientInformation Calling Integration GetClientAccessToken method with clientId {clientId}", clientId);
+                _logger.LogDebug("Executing function GetClientInformation Calling Integration GetClientAccessToken method with clientId {clientId}", clientId);
 
                 requestStr = clientId;
                 fullUrl = CommonHelper.GetFullUrl(baseUrl, $"/clients/getclientinformation?clientId={clientId}");
@@ -55,7 +54,7 @@ namespace WhatsAppBridge.Handler
                 var response = await _httpClient.GetAsync($"/clients/getclientinformation?clientId={clientId}");
                 responseStr = await response.Content.ReadAsStringAsync();
 
-                _logger.LogInformation("Received response when executing function GetClientInformation of Integration GetClientInformation method with clientId {clientId} with url {url} and request {request} and content {content}", clientId, fullUrl, requestStr, responseStr);
+                _logger.LogDebug("Received response when executing function GetClientInformation of Integration GetClientInformation method with clientId {clientId} with url {url} and request {request} and content {content}", clientId, fullUrl, requestStr, responseStr);
 
                 var result = JsonConvert.DeserializeObject<ApiResult>(responseStr);
                 if (result != null && result.Success)
@@ -65,8 +64,7 @@ namespace WhatsAppBridge.Handler
                         return clientInfo;
                 }
 
-                _logger.LogInformation("Received response when executing function GetClientInformation of Integration GetClientAccessToken method with clientId {clientId} with url {url} and request {request} and content {content}", clientId, fullUrl, requestStr, responseStr);
-
+                _logger.LogDebug("Received response when executing function GetClientInformation of Integration GetClientAccessToken method with clientId {clientId} with url {url} and request {request} and content {content}", clientId, fullUrl, requestStr, responseStr);
             }
             catch (Exception ex)
             {
@@ -84,9 +82,9 @@ namespace WhatsAppBridge.Handler
 
             try
             {
-                _logger.LogInformation("Calling function GetSenderInformation with clientId {clientId} and senderNameId {senderNameId}", clientId, senderNameId);
+                _logger.LogDebug("Calling function GetSenderInformation with clientId {clientId} and senderNameId {senderNameId}", clientId, senderNameId);
 
-                _logger.LogInformation("Executing function GetSenderInformation Calling Integration GetClientAccessToken method with clientId {clientId} and senderNameId {senderNameId}", clientId, senderNameId);
+                _logger.LogDebug("Executing function GetSenderInformation Calling Integration GetClientAccessToken method with clientId {clientId} and senderNameId {senderNameId}", clientId, senderNameId);
 
                 requestStr = clientId;
                 fullUrl = CommonHelper.GetFullUrl(baseUrl, $"/sendernames/getsendernameinformation?clientId={clientId}&senderNameId={senderNameId}");
@@ -94,7 +92,7 @@ namespace WhatsAppBridge.Handler
                 var response = await _httpClient.GetAsync($"/sendernames/getsendernameinformation?clientId={clientId}&senderNameId={senderNameId}");
                 responseStr = await response.Content.ReadAsStringAsync();
 
-                _logger.LogInformation("Received response when executing function GetSenderInformation of Integration GetClientInformation method with clientId {clientId} and senderNameId {senderNameId} with url {url} and request {request} and content {content}", clientId, senderNameId, fullUrl, requestStr, responseStr);
+                _logger.LogDebug("Received response when executing function GetSenderInformation of Integration GetClientInformation method with clientId {clientId} and senderNameId {senderNameId} with url {url} and request {request} and content {content}", clientId, senderNameId, fullUrl, requestStr, responseStr);
 
                 var result = JsonConvert.DeserializeObject<ApiResult>(responseStr);
                 if (result != null && result.Success)
@@ -104,7 +102,7 @@ namespace WhatsAppBridge.Handler
                         return senderNameInfo;
                 }
 
-                _logger.LogInformation("Received response when executing function GetSenderInformation of Integration GetClientAccessToken method with clientId {clientId} and senderNameId {senderNameId} with url {url} and request {request} and content {content}", clientId, senderNameId, fullUrl, requestStr, responseStr);
+                _logger.LogDebug("Received response when executing function GetSenderInformation of Integration GetClientAccessToken method with clientId {clientId} and senderNameId {senderNameId} with url {url} and request {request} and content {content}", clientId, senderNameId, fullUrl, requestStr, responseStr);
 
             }
             catch (Exception ex)
@@ -119,7 +117,7 @@ namespace WhatsAppBridge.Handler
         {
             try
             {
-                _logger.LogInformation("Calling function SendMessageStatusUpdate with received object {object}", JsonConvert.SerializeObject(updateDto));
+                _logger.LogDebug("Calling function SendMessageStatusUpdate with received object {object}", JsonConvert.SerializeObject(updateDto));
 
                 string requestStr = String.Empty;
                 string fullUrl = String.Empty;
@@ -130,7 +128,7 @@ namespace WhatsAppBridge.Handler
                     requestStr = JsonConvert.SerializeObject(updateDto);
                     fullUrl = CommonHelper.GetFullUrl(baseUrl, $"/bridge/whatsappmessagestatusupdate");
 
-                    _logger.LogInformation("Executing function SendMessageStatusUpdate Calling Integration whatsappmessagestatusupdate method with clientId {clientId} with url {url} and request {request}", updateDto.client_Id, fullUrl, requestStr);
+                    _logger.LogDebug("Executing function SendMessageStatusUpdate Calling Integration whatsappmessagestatusupdate method with clientId {clientId} with url {url} and request {request}", updateDto.client_Id, fullUrl, requestStr);
 
                     var response = await _httpClient.PostAsync($"/bridge/whatsappmessagestatusupdate", new StringContent(requestStr, null, "application/json"));
                     if (!response.IsSuccessStatusCode)
@@ -156,7 +154,7 @@ namespace WhatsAppBridge.Handler
         {
             try
             {
-                _logger.LogInformation("Calling function SendMessageTemplateStatusUpdate with received object {object} and sendRequestToIntegration {sendRequestToIntegration}", JsonConvert.SerializeObject(messageTemplate), sendRequestToIntegration);
+                _logger.LogDebug("Calling function SendMessageTemplateStatusUpdate with received object {object} and sendRequestToIntegration {sendRequestToIntegration}", JsonConvert.SerializeObject(messageTemplate), sendRequestToIntegration);
 
                 MessageTemplateDto templateDto = new MessageTemplateDto
                 {
@@ -187,7 +185,7 @@ namespace WhatsAppBridge.Handler
                         requestStr = JsonConvert.SerializeObject(result);
                         fullUrl = CommonHelper.GetFullUrl(baseUrl, $"/bridge/templatesync");
 
-                        _logger.LogInformation("Executing function SendMessageTemplateStatusUpdate Calling Integration TemplatePost method with templateId {templateId } with url {url} and request {request}", templateDto.Id, fullUrl, requestStr);
+                        _logger.LogDebug("Executing function SendMessageTemplateStatusUpdate Calling Integration TemplatePost method with templateId {templateId } with url {url} and request {request}", templateDto.Id, fullUrl, requestStr);
 
                         var response = await _httpClient.PostAsync($"/bridge/templatesync", new StringContent(requestStr, null, "application/json"));
                         responseStr = await response.Content.ReadAsStringAsync();
@@ -214,7 +212,7 @@ namespace WhatsAppBridge.Handler
         {
             try
             {
-                _logger.LogInformation("Calling function MessageReceiveUpdate with received object {object}", JsonConvert.SerializeObject(updateDto));
+                _logger.LogDebug("Calling function MessageReceiveUpdate with received object {object}", JsonConvert.SerializeObject(updateDto));
 
                 string requestStr = String.Empty;
                 string fullUrl = String.Empty;
@@ -232,7 +230,7 @@ namespace WhatsAppBridge.Handler
 
                     fullUrl = CommonHelper.GetFullUrl(baseUrl, endpoint);
 
-                    _logger.LogInformation("Executing function MessageReceiveUpdate Calling Integration whatsappmessagereceive method with clientId {clientId} with url {url} and request {request}", updateDto.client_Id, fullUrl, requestStr);
+                    _logger.LogDebug("Executing function MessageReceiveUpdate Calling Integration whatsappmessagereceive method with clientId {clientId} with url {url} and request {request}", updateDto.client_Id, fullUrl, requestStr);
 
                     var response = await _httpClient.PostAsync(endpoint, new StringContent(requestStr, null, "application/json"));
 
@@ -241,7 +239,7 @@ namespace WhatsAppBridge.Handler
                     else
                         responseStr = await response.Content.ReadAsStringAsync();
 
-                    _logger.LogInformation("Received response when executing function MessageReceiveUpdate of Integration whatsappmessagereceive method with clientId {clientId} with url {url} and request {request} and content {content}", updateDto.client_Id, fullUrl, requestStr, responseStr);
+                    _logger.LogDebug("Received response when executing function MessageReceiveUpdate of Integration whatsappmessagereceive method with clientId {clientId} with url {url} and request {request} and content {content}", updateDto.client_Id, fullUrl, requestStr, responseStr);
 
                 }
                 catch (Exception ex)

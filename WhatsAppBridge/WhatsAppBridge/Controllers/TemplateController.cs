@@ -64,7 +64,7 @@ namespace WhatsAppBridge.Controllers
             }
 
             var fullUrl = CommonHelper.GetFullUrl(baseUrl, $"/{messageTemplateId}");
-            _logger.LogInformation("Calling WhatsApp GetTemplateById method with templateId {templateId } with url {url}", messageTemplateId, fullUrl);
+            _logger.LogDebug("Calling WhatsApp GetTemplateById method with templateId {templateId } with url {url}", messageTemplateId, fullUrl);
 
             var clientInfo = await _integrationHandler.GetClientInformation(clientId);
             if (clientInfo == null)
@@ -119,7 +119,7 @@ namespace WhatsAppBridge.Controllers
 
             var fullUrl = CommonHelper.GetFullUrl(baseUrl, $"/{messageTemplateId}");
 
-            _logger.LogInformation("Calling WhatsApp SyncTemplatebyId method with templateId {templateId } with url {url}", messageTemplateId, fullUrl);
+            _logger.LogDebug("Calling WhatsApp SyncTemplatebyId method with templateId {templateId } with url {url}", messageTemplateId, fullUrl);
 
             var clientInfo = await _integrationHandler.GetClientInformation(clientId);
             if (clientInfo == null)
