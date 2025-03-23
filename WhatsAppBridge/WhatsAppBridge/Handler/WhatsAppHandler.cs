@@ -504,7 +504,7 @@ namespace WhatsAppBridge.Handler
 
         private async Task<UploadMediaResultDto> UploadMedia(string phoneId, UploadMediaDto.MediaDto item)
         {
-            _logger.LogInformation("Processing file in function HandleMediaUpload with item {item}", JsonConvert.SerializeObject(item));
+            _logger.LogDebug("Processing file in function HandleMediaUpload with item={item}", JsonConvert.SerializeObject(item));
 
             //MediaPath
             var mediaDirectory = String.Concat(_webHostEnvironment.ContentRootPath, "Media");
@@ -522,7 +522,7 @@ namespace WhatsAppBridge.Handler
             {
                 if (String.IsNullOrWhiteSpace(item.Url))
                 {
-                    _logger.LogError("Error in processing file in function HandleMediaUpload with item {item}, item does not have URL", JsonConvert.SerializeObject(item));
+                    _logger.LogError("Error in processing file in function HandleMediaUpload with item={item}, item does not have URL", JsonConvert.SerializeObject(item));
                     //results.Add(result);
                     //continue;
                 }
@@ -530,7 +530,7 @@ namespace WhatsAppBridge.Handler
                 HttpResponseMessage headResponses = await _httpClient.GetAsync(item.Url);
                 if (!headResponses.IsSuccessStatusCode)
                 {
-                    _logger.LogError("Error in processing file in function HandleMediaUpload with item {item}, cannot fetch file from origin server", JsonConvert.SerializeObject(item));
+                    _logger.LogError("Error in processing file in function HandleMediaUpload with item={item}, cannot fetch file from origin server", JsonConvert.SerializeObject(item));
                     //results.Add(result);
                     //continue;
                     return result;
@@ -538,7 +538,7 @@ namespace WhatsAppBridge.Handler
 
                 if (!headResponses.Content.Headers.ContentLength.HasValue)
                 {
-                    _logger.LogError("Error in processing file in function HandleMediaUpload with item {item}, cannot fetch file from origin server", JsonConvert.SerializeObject(item));
+                    _logger.LogError("Error in processing file in function HandleMediaUpload with item={item}, cannot fetch file from origin server", JsonConvert.SerializeObject(item));
                     //results.Add(result);
                     //continue;
 
@@ -606,14 +606,14 @@ namespace WhatsAppBridge.Handler
                     }
                     else
                     {
-                        _logger.LogError("Error in processing file in function HandleMediaUpload with item {item}, cannot upload file with response {response}", JsonConvert.SerializeObject(item), responseStr);
+                        _logger.LogError("Error in processing file in function HandleMediaUpload with item={item}, cannot upload file with response={response}", JsonConvert.SerializeObject(item), responseStr);
                         throw new BadHttpRequestException(responseStr);
                     }
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError("Exception occurred {exception} when executing function HandleMediaUpload with item {item} and response {responseStr }", ex, JsonConvert.SerializeObject(item), responseStr);
+                _logger.LogError("Exception occurred {exception} when executing function HandleMediaUpload with item={item} and response={responseStr}", ex, JsonConvert.SerializeObject(item), responseStr);
                 //results.Add(result);
                 return result;
             }
@@ -632,11 +632,11 @@ namespace WhatsAppBridge.Handler
 
             try
             {
-                _logger.LogInformation("Processing file in function UploadMediaAsset with input url {url}", url);
+                _logger.LogDebug("Processing file in function UploadMediaAsset with input url={url}", url);
 
                 if (String.IsNullOrWhiteSpace(url))
                 {
-                    _logger.LogError("Error in processing file in function UploadMediaAsset with url {url}, item does not have URL", url);
+                    _logger.LogError("Error in processing file in function UploadMediaAsset with url={url}, item does not have URL", url);
                 }
 
                 //MediaPath
@@ -647,7 +647,7 @@ namespace WhatsAppBridge.Handler
                 HttpResponseMessage headResponses = await _httpClient.GetAsync(url);
                 if (!headResponses.Content.Headers.ContentLength.HasValue)
                 {
-                    _logger.LogError("Error in processing file in function UploadMediaAsset with url {url}, cannot fetch file from origin server", url);
+                    _logger.LogError("Error in processing file in function UploadMediaAsset with url={url}, cannot fetch file from origin server", url);
                     return String.Empty;
                 }
 
@@ -676,7 +676,7 @@ namespace WhatsAppBridge.Handler
                 var uploadSessionResponseContent = await uploadSessionResponse.Content.ReadAsStringAsync();
                 if (!uploadSessionResponse.IsSuccessStatusCode)
                 {
-                    _logger.LogError("Error in processing file in function UploadMediaAsset with url {url} and response {response}, doesn't received upload session id from facebook", url, uploadSessionResponseContent);
+                    _logger.LogError("Error in processing file in function UploadMediaAsset with url={url} and response={response}, doesn't received upload session id from facebook", url, uploadSessionResponseContent);
                     return String.Empty;
                 }
 
@@ -685,7 +685,7 @@ namespace WhatsAppBridge.Handler
 
                 if (String.IsNullOrWhiteSpace(sessionId))
                 {
-                    _logger.LogError("Error in processing file in function UploadMediaAsset with url {url} and response {response}, doesn't received upload session id from facebook", url, uploadSessionResponseContent);
+                    _logger.LogError("Error in processing file in function UploadMediaAsset with url={url} and response={response}, doesn't received upload session id from facebook", url, uploadSessionResponseContent);
                     return String.Empty;
                 }
 
@@ -715,7 +715,7 @@ namespace WhatsAppBridge.Handler
 
                     if (!uploadfileResponse.IsSuccessStatusCode)
                     {
-                        _logger.LogError("Error in processing file in function UploadMediaAsset with url {url} and sessionId {sessionId} and response {response}, doesn't received upload session id from facebook", url, sessionId, uploadSessionResponseContent);
+                        _logger.LogError("Error in processing file in function UploadMediaAsset with url={url} and sessionId={sessionId} and response={response}, doesn't received upload session id from facebook", url, sessionId, uploadSessionResponseContent);
                         return String.Empty;
                     }
 
@@ -726,7 +726,7 @@ namespace WhatsAppBridge.Handler
             }
             catch (Exception ex)
             {
-                _logger.LogError("Exception occurred {exception} when executing function UploadMediaAsset with url {url} and sessionId {sessionId} and fileHandleId {fileHandleId}", ex, url, sessionId, fileHandleId);
+                _logger.LogError("Exception occurred {exception} when executing function UploadMediaAsset with url={url} and sessionId={sessionId} and fileHandleId={fileHandleId}", ex, url, sessionId, fileHandleId);
             }
             finally // Delete the media
             {
@@ -761,7 +761,7 @@ namespace WhatsAppBridge.Handler
                 int batchSize = _whatsAppConfigurationSetting.Value.SendMessageBatchSize;
                 var batches = model.PhoneNumbers.ChunkBy(batchSize);
 
-                _logger.LogDebug("Calling function HandleSendBatchMessage with received object {object} with batch size {batchSize} and totalbatchCount {totalbatchCount}", JsonConvert.SerializeObject(model), batchSize, batches.Count);
+                _logger.LogDebug("Calling function HandleSendBatchMessage with received object={object} with batch size={batchSize} and totalbatchCount={totalbatchCount}", JsonConvert.SerializeObject(model), batchSize, batches.Count);
 
                 var senderInfo = await _integrationHandler.GetSenderInformation(model.ClientId, model.SenderNameId);
                 if (senderInfo == null)
@@ -796,13 +796,15 @@ namespace WhatsAppBridge.Handler
 
                         requestStr = JsonConvert.SerializeObject(batchRequest);
 
-                        _logger.LogDebug("Created Batch Request in function HandleSendBatchMessage with received object {object} with batch size {batchSize} and totalbatchCount {totalbatchCount} and batchIndex {batchIndex} and batchRequest {batchRequest}", JsonConvert.SerializeObject(model), batchSize, batches.Count, (i + 1), requestStr);
+                        _logger.LogDebug("Created Batch Request in function HandleSendBatchMessage with received object={object} with batch size={batchSize} and totalbatchCount={totalbatchCount} and batchIndex={batchIndex} and batchRequest={batchRequest}", JsonConvert.SerializeObject(model), batchSize, batches.Count, (i + 1), requestStr);
+
+                        var apiCallStart = DateTime.UtcNow;
 
                         // Send the batch request
                         var resp = await _httpClient.PostAsync("", new StringContent(requestStr, null, "application/json"));
                         responseStr = await resp.Content.ReadAsStringAsync();
 
-                        _logger.LogInformation("Received Batch Response in function HandleSendBatchMessage with received object {object} with batch size {batchSize} and totalbatchCount {totalbatchCount} and batchIndex {batchIndex} and batchRequest {batchRequest} and batchResponse {batchResponse}", JsonConvert.SerializeObject(model), batchSize, batches.Count, (i + 1), requestStr, responseStr);
+                        _logger.LogInformation("Received Batch Response in function HandleSendBatchMessage with received object={object} with batch size={batchSize} and totalbatchCount={totalbatchCount} and batchIndex={batchIndex} and batchRequest={batchRequest} and batchResponse={batchResponse} with apiResponseTime={apiResponseTime}", JsonConvert.SerializeObject(model), batchSize, batches.Count, (i + 1), requestStr, responseStr, DateTime.UtcNow.Subtract(apiCallStart).TotalMicroseconds);
 
                         var responseModel = JsonConvert.DeserializeObject<List<BatchMessageResponseModel>>(responseStr);
                         for (int j = 0; j < batch.Count; j++)
@@ -843,16 +845,16 @@ namespace WhatsAppBridge.Handler
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError("Exception occurred {exception} when executing function HandleSendBatchMessage with received object {object} with batch size {batchSize} and batchCount {batchCount} and batchIndex {batchIndex} and batchRequest {batchRequest} and batchResponse {batchResponse}", ex, JsonConvert.SerializeObject(model), batchSize, batches.Count, i, requestStr, responseStr);
+                        _logger.LogError("Exception occurred {exception} when executing function HandleSendBatchMessage with received object={object} with batch size={batchSize} and batchCount={batchCount} and batchIndex={batchIndex} and batchRequest={batchRequest} and batchResponse={batchResponse}", ex, JsonConvert.SerializeObject(model), batchSize, batches.Count, i, requestStr, responseStr);
                     }
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError("Exception occurred {exception} when executing function HandleSendBatchMessage with received object {object}", ex, JsonConvert.SerializeObject(model));
+                _logger.LogError("Exception occurred {exception} when executing function HandleSendBatchMessage with received object={object}", ex, JsonConvert.SerializeObject(model));
             }
 
-            _logger.LogDebug("Execution ends for function HandleSendBatchMessage with received object {object} and response {response}", JsonConvert.SerializeObject(model), JsonConvert.SerializeObject(models));
+            _logger.LogDebug("Execution ends for function HandleSendBatchMessage with received object={object} and response={response}", JsonConvert.SerializeObject(model), JsonConvert.SerializeObject(models));
 
             if (!models.Any())
             {
@@ -893,7 +895,7 @@ namespace WhatsAppBridge.Handler
                 int batchSize = _whatsAppConfigurationSetting.Value.SendMessageBatchSize;
                 var batches = model.PhoneNumbers.ChunkBy(batchSize);
 
-                _logger.LogDebug("Calling function HandleSendInteractiveMessage with received object {object} with batch size {batchSize} and totalbatchCount {totalbatchCount}", JsonConvert.SerializeObject(model), batchSize, batches.Count);
+                _logger.LogDebug("Calling function HandleSendInteractiveMessage with received object={object} with batch size={batchSize} and totalbatchCount={totalbatchCount}", JsonConvert.SerializeObject(model), batchSize, batches.Count);
 
                 var interactive = GetInteractiveMessageContent(model);
 
@@ -929,13 +931,15 @@ namespace WhatsAppBridge.Handler
 
                         requestStr = JsonConvert.SerializeObject(batchRequest);
 
-                        _logger.LogDebug("Created Batch Request in function HandleSendInteractiveMessage with received object {object} with batch size {batchSize} and totalbatchCount {totalbatchCount} and batchIndex {batchIndex} and batchRequest {batchRequest}", JsonConvert.SerializeObject(model), batchSize, batches.Count, (i + 1), requestStr);
+                        _logger.LogDebug("Created Batch Request in function HandleSendInteractiveMessage with received object={object} with batch size={batchSize} and totalbatchCount={totalbatchCount} and batchIndex={batchIndex} and batchRequest={batchRequest}", JsonConvert.SerializeObject(model), batchSize, batches.Count, (i + 1), requestStr);
+
+                        var apiCallStart = DateTime.UtcNow;
 
                         // Send the batch request   
                         var resp = await _httpClient.PostAsync("", new StringContent(requestStr, null, "application/json"));
                         responseStr = await resp.Content.ReadAsStringAsync();
 
-                        _logger.LogInformation("Received Batch Response in function HandleSendInteractiveMessage with received object {object} with batch size {batchSize} and totalbatchCount {totalbatchCount} and batchIndex {batchIndex} and batchRequest {batchRequest} and batchResponse {batchResponse}", JsonConvert.SerializeObject(model), batchSize, batches.Count, (i + 1), requestStr, responseStr);
+                        _logger.LogInformation("Received Batch Response in function HandleSendInteractiveMessage with received object={object} with batch size={batchSize} and totalbatchCount={totalbatchCount} and batchIndex={batchIndex} and batchRequest={batchRequest} and batchResponse={batchResponse} with apiResponseTime={apiResponseTime}", JsonConvert.SerializeObject(model), batchSize, batches.Count, (i + 1), requestStr, responseStr, DateTime.UtcNow.Subtract(apiCallStart).TotalMicroseconds);
 
                         var responseModel = JsonConvert.DeserializeObject<List<BatchMessageResponseModel>>(responseStr);
                         for (int j = 0; j < batch.Count; j++)
@@ -976,16 +980,16 @@ namespace WhatsAppBridge.Handler
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError("Exception occurred {exception} when executing function HandleSendInteractiveMessage with received object {object} with batch size {batchSize} and batchCount {batchCount} and batchIndex {batchIndex} and batchRequest {batchRequest} and batchResponse {batchResponse}", ex, JsonConvert.SerializeObject(model), batchSize, batches.Count, i, requestStr, responseStr);
+                        _logger.LogError("Exception occurred {exception} when executing function HandleSendInteractiveMessage with received object={object} with batch size={batchSize} and batchCount={batchCount} and batchIndex={batchIndex} and batchRequest={batchRequest} and batchResponse={batchResponse}", ex, JsonConvert.SerializeObject(model), batchSize, batches.Count, i, requestStr, responseStr);
                     }
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError("Exception occurred {exception} when executing function HandleSendInteractiveMessage with received object {object}", ex, JsonConvert.SerializeObject(model));
+                _logger.LogError("Exception occurred {exception} when executing function HandleSendInteractiveMessage with received object={object}", ex, JsonConvert.SerializeObject(model));
             }
 
-            _logger.LogDebug("Execution ends for function HandleSendInteractiveMessage with received object {object} and response {response}", JsonConvert.SerializeObject(model), JsonConvert.SerializeObject(models));
+            _logger.LogDebug("Execution ends for function HandleSendInteractiveMessage with received object={object} and response={response}", JsonConvert.SerializeObject(model), JsonConvert.SerializeObject(models));
 
             if (!models.Any())
             {
@@ -1026,7 +1030,7 @@ namespace WhatsAppBridge.Handler
                 //Replace empty spaces in template name with _
                 model.Name = (model.Name ?? "").Replace(" ", "_");
 
-                _logger.LogDebug("Calling function HandleMessageTemplateOps with received payload {payload}", JsonConvert.SerializeObject(model));
+                _logger.LogDebug("Calling function HandleMessageTemplateOps with received payload={payload}", JsonConvert.SerializeObject(model));
 
                 var senderNameInfo = await _integrationHandler.GetSenderInformation(model.ClientId, model.SenderNameId);
                 if (senderNameInfo == null)
@@ -1198,15 +1202,16 @@ namespace WhatsAppBridge.Handler
 
                 requestStr = JsonConvert.SerializeObject(template);
 
-                _logger.LogInformation("Created Message Template Request in function HandleMessageTemplateOps with received object {object} with request {request}", JsonConvert.SerializeObject(model), requestStr);
+                _logger.LogDebug("Created Message Template Request in function HandleMessageTemplateOps with received object={object} with request={request}", JsonConvert.SerializeObject(model), requestStr);
 
                 // Send the update request   
                 if (!String.IsNullOrWhiteSpace(messageTemplateId))
                 {
+                    var apiCallStart = DateTime.UtcNow;
                     resp = await _httpClient.PostAsync($"/{messageTemplateId}", new StringContent(requestStr, null, "application/json"));
                     responseStr = await resp.Content.ReadAsStringAsync();
 
-                    _logger.LogInformation("Received Update Template Message Response in function HandleMessageTemplateOps with received object {object} with request {request} and response {response}", JsonConvert.SerializeObject(model), requestStr, responseStr);
+                    _logger.LogInformation("Received Update Template Message Response in function HandleMessageTemplateOps with received object={object} with request={request} and response={response} with apiResponseTime={apiResponseTime}", JsonConvert.SerializeObject(model), requestStr, responseStr, DateTime.UtcNow.Subtract(apiCallStart).TotalMicroseconds);
 
                     var updateTemplate = JsonConvert.DeserializeObject<UpdateMessageTemplateResponseModel>(responseStr);
                     if (updateTemplate != null)
@@ -1251,10 +1256,11 @@ namespace WhatsAppBridge.Handler
                 }
                 else //Send the create request
                 {
+                    var apiCallStart = DateTime.UtcNow;
                     resp = await _httpClient.PostAsync($"/{senderNameInfo.BusinessAccountId}/message_templates", new StringContent(requestStr, null, "application/json"));
                     responseStr = await resp.Content.ReadAsStringAsync();
 
-                    _logger.LogInformation("Received Create Template Message Response in function HandleMessageTemplateOps with received object {object} with request {request} and response {response}", JsonConvert.SerializeObject(model), requestStr, responseStr);
+                    _logger.LogInformation("Received Create Template Message Response in function HandleMessageTemplateOps with received object={object} with request={request} and response={response} with apiResponseTime={apiResponseTime}", JsonConvert.SerializeObject(model), requestStr, responseStr, DateTime.UtcNow.Subtract(apiCallStart).TotalMicroseconds);
 
                     var createTemplate = JsonConvert.DeserializeObject<CreateMessageTemplateResponseModel>(responseStr);
                     if (createTemplate != null)
@@ -1300,7 +1306,7 @@ namespace WhatsAppBridge.Handler
             }
             catch (Exception ex)
             {
-                _logger.LogError("Exception occurred {exception} when executing function HandleMessageTemplateOps with received object {object} with request {request} and response {response}", ex, JsonConvert.SerializeObject(model), requestStr, responseStr);
+                _logger.LogError("Exception occurred {exception} when executing function HandleMessageTemplateOps with received object={object} with request={request} and response={response}", ex, JsonConvert.SerializeObject(model), requestStr, responseStr);
             }
 
             return new ApiResult
@@ -1325,7 +1331,7 @@ namespace WhatsAppBridge.Handler
                 int batchSize = _whatsAppConfigurationSetting.Value.SendMessageBatchSize;
                 var batches = model.PhoneNumbers.ChunkBy(batchSize);
 
-                _logger.LogDebug("Calling function HandleSendBatchTemplateMessage with received object {object} with batch size {batchSize} and totalbatchCount {totalbatchCount}", JsonConvert.SerializeObject(model), batchSize, batches.Count);
+                _logger.LogDebug("Calling function HandleSendBatchTemplateMessage with received object={object} with batch size={batchSize} and totalbatchCount={totalbatchCount}", JsonConvert.SerializeObject(model), batchSize, batches.Count);
 
                 var template = GetTemplateContent(model);
 
@@ -1361,13 +1367,15 @@ namespace WhatsAppBridge.Handler
 
                         requestStr = JsonConvert.SerializeObject(batchRequest);
 
-                        _logger.LogDebug("Created Batch Request in function HandleSendBatchTemplateMessage with received object {object} with batch size {batchSize} and totalbatchCount {totalbatchCount} and batchIndex {batchIndex} and batchRequest {batchRequest}", JsonConvert.SerializeObject(model), batchSize, batches.Count, (i + 1), requestStr);
+                        _logger.LogDebug("Created Batch Request in function HandleSendBatchTemplateMessage with received object={object} with batch size={batchSize} and totalbatchCount={totalbatchCount} and batchIndex={batchIndex} and batchRequest={batchRequest}", JsonConvert.SerializeObject(model), batchSize, batches.Count, (i + 1), requestStr);
+
+                        var apiCallStart = DateTime.UtcNow;
 
                         // Send the batch request   
                         var resp = await _httpClient.PostAsync("", new StringContent(requestStr, null, "application/json"));
                         responseStr = await resp.Content.ReadAsStringAsync();
 
-                        _logger.LogInformation("Received Batch Response in function HandleSendBatchTemplateMessage with received object {object} with batch size {batchSize} and totalbatchCount {totalbatchCount} and batchIndex {batchIndex} and batchRequest {batchRequest} and batchResponse {batchResponse}", JsonConvert.SerializeObject(model), batchSize, batches.Count, (i + 1), requestStr, responseStr);
+                        _logger.LogInformation("Received Batch Response in function HandleSendBatchTemplateMessage with received object={object} with batch size={batchSize} and totalbatchCount={totalbatchCount} and batchIndex={batchIndex} and batchRequest={batchRequest} and batchResponse={batchResponse} with apiResponseTime={apiResponseTime}", JsonConvert.SerializeObject(model), batchSize, batches.Count, (i + 1), requestStr, responseStr, DateTime.UtcNow.Subtract(apiCallStart).TotalMicroseconds);
 
                         var responseModel = JsonConvert.DeserializeObject<List<BatchMessageResponseModel>>(responseStr);
                         for (int j = 0; j < batch.Count; j++)
@@ -1408,16 +1416,16 @@ namespace WhatsAppBridge.Handler
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError("Exception occurred {exception} when executing function HandleSendBatchTemplateMessage with received object {object} with batch size {batchSize} and batchCount {batchCount} and batchIndex {batchIndex} and batchRequest {batchRequest} and batchResponse {batchResponse}", ex, JsonConvert.SerializeObject(model), batchSize, batches.Count, i, requestStr, responseStr);
+                        _logger.LogError("Exception occurred {exception} when executing function HandleSendBatchTemplateMessage with received object={object} with batch size={batchSize} and batchCount={batchCount} and batchIndex={batchIndex} and batchRequest={batchRequest} and batchResponse={batchResponse}", ex, JsonConvert.SerializeObject(model), batchSize, batches.Count, i, requestStr, responseStr);
                     }
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError("Exception occurred {exception} when executing function HandleSendBatchTemplateMessage with received object {object}", ex, JsonConvert.SerializeObject(model));
+                _logger.LogError("Exception occurred {exception} when executing function HandleSendBatchTemplateMessage with received object={object}", ex, JsonConvert.SerializeObject(model));
             }
 
-            _logger.LogDebug("Execution ends for function HandleSendBatchTemplateMessage with received object {object} and response {response}", JsonConvert.SerializeObject(model), JsonConvert.SerializeObject(models));
+            _logger.LogDebug("Execution ends for function HandleSendBatchTemplateMessage with received object={object} and response={response}", JsonConvert.SerializeObject(model), JsonConvert.SerializeObject(models));
 
             if (!models.Any())
             {
@@ -1450,7 +1458,7 @@ namespace WhatsAppBridge.Handler
         /// <exception cref="BadHttpRequestException"></exception>
         public async Task<ApiResult> HandleMediaUpload(UploadMediaDto model)
         {
-            _logger.LogDebug("Calling function HandleMediaUpload with received payload {payload}", JsonConvert.SerializeObject(model));
+            _logger.LogDebug("Calling function HandleMediaUpload with received payload={payload}", JsonConvert.SerializeObject(model));
 
             var senderInfo = await _integrationHandler.GetSenderInformation(model.ClientId, model.SenderNameId);
             if (senderInfo == null)
@@ -1501,7 +1509,7 @@ namespace WhatsAppBridge.Handler
                 //Replace empty spaces in template name with _
                 model.Name = model.Name.Replace(" ", "_");
 
-                _logger.LogInformation("Calling function HandleCarouselTemplateOps with received payload {payload}", JsonConvert.SerializeObject(model));
+                _logger.LogDebug("Calling function HandleCarouselTemplateOps with received payload={payload}", JsonConvert.SerializeObject(model));
 
                 var senderNameInfo = await _integrationHandler.GetSenderInformation(model.ClientId, model.SenderNameId);
                 if (senderNameInfo == null)
@@ -1702,15 +1710,17 @@ namespace WhatsAppBridge.Handler
 
                 requestStr = JsonConvert.SerializeObject(template);
 
-                _logger.LogInformation("Created Message Template Request in function HandleCarouselTemplateOps with received object {object} with request {request}", JsonConvert.SerializeObject(model), requestStr);
+                _logger.LogDebug("Created Message Template Request in function HandleCarouselTemplateOps with received object={object} with request={request}", JsonConvert.SerializeObject(model), requestStr);
 
                 // Send the update request   
                 if (!String.IsNullOrWhiteSpace(messageTemplateId))
                 {
-                    resp = await _httpClient.PostAsync($"/{messageTemplateId}", new StringContent(requestStr, null, "application/json"));
+                    var apiCallStart = DateTime.UtcNow;
+                    var endpoint = $"/{messageTemplateId}";
+                    resp = await _httpClient.PostAsync(endpoint, new StringContent(requestStr, null, "application/json"));
                     responseStr = await resp.Content.ReadAsStringAsync();
 
-                    _logger.LogInformation("Received Update Template Message Response in function HandleCarouselTemplateOps with received object {object} with request {request} and response {response}", JsonConvert.SerializeObject(model), requestStr, responseStr);
+                    _logger.LogInformation("Received Update Template Message Response in function HandleCarouselTemplateOps with received object={object} with apiEndpoint={apiEndpoint} with request={request} and response={response} with apiResponseTime={apiResponseTime}", endpoint, JsonConvert.SerializeObject(model), requestStr, responseStr, DateTime.UtcNow.Subtract(apiCallStart).TotalMicroseconds);
 
                     var updateTemplate = JsonConvert.DeserializeObject<UpdateMessageTemplateResponseModel>(responseStr);
                     if (updateTemplate != null)
@@ -1755,10 +1765,13 @@ namespace WhatsAppBridge.Handler
                 }
                 else //Send the create request
                 {
-                    resp = await _httpClient.PostAsync($"/{senderNameInfo.BusinessAccountId}/message_templates", new StringContent(requestStr, null, "application/json"));
+
+                    var apiCallStart = DateTime.UtcNow;
+                    var endpoint = $"/{senderNameInfo.BusinessAccountId}/message_templates";
+                    resp = await _httpClient.PostAsync(endpoint, new StringContent(requestStr, null, "application/json"));
                     responseStr = await resp.Content.ReadAsStringAsync();
 
-                    _logger.LogInformation("Received Create Template Message Response in function HandleCarouselTemplateOps with received object {object} with request {request} and response {response}", JsonConvert.SerializeObject(model), requestStr, responseStr);
+                    _logger.LogInformation("Received Create Template Message Response in function HandleCarouselTemplateOps with received object={object} with apiEndpoint={apiEndpoint} with request={request} and response={response} with apiResponseTime={apiResponseTime}", endpoint, JsonConvert.SerializeObject(model), requestStr, responseStr, DateTime.UtcNow.Subtract(apiCallStart).TotalMicroseconds);
 
                     var createTemplate = JsonConvert.DeserializeObject<CreateMessageTemplateResponseModel>(responseStr);
                     if (createTemplate != null)
@@ -1804,7 +1817,7 @@ namespace WhatsAppBridge.Handler
             }
             catch (Exception ex)
             {
-                _logger.LogError("Exception occurred {exception} when executing function HandleCarouselTemplateOps with received object {object} with request {request} and response {response}", ex, JsonConvert.SerializeObject(model), requestStr, responseStr);
+                _logger.LogError("Exception occurred {exception} when executing function HandleCarouselTemplateOps with received object={object} with request={request} and response={response}", ex, JsonConvert.SerializeObject(model), requestStr, responseStr);
             }
 
             return new ApiResult
@@ -1846,7 +1859,7 @@ namespace WhatsAppBridge.Handler
                 model.Category = (model.Category ?? "").Replace(" ", "_").ToLower().Trim();
                 model.EndpointUrl = (model.EndpointUrl ?? "").ToLower().Trim();
 
-                _logger.LogDebug("Calling function HandleFlowOps with received object {object}", JsonConvert.SerializeObject(model));
+                _logger.LogDebug("Calling function HandleFlowOps with received object={object}", JsonConvert.SerializeObject(model));
 
                 var senderNameInfo = await _integrationHandler.GetSenderInformation(model.ClientId, model.SenderNameId);
                 if (senderNameInfo == null)
@@ -1873,7 +1886,8 @@ namespace WhatsAppBridge.Handler
                     savefileStream.Close();
                     savefileStream.Dispose();
 
-                    var request = new HttpRequestMessage(HttpMethod.Post, $"{model.FlowId}/assets");
+                    var endpoint = $"{model.FlowId}/assets";
+                    var request = new HttpRequestMessage(HttpMethod.Post, endpoint);
 
                     // Prepare file content
                     using (var content = new MultipartFormDataContent())
@@ -1898,13 +1912,15 @@ namespace WhatsAppBridge.Handler
                         // Assign content to the request
                         request.Content = content;
 
+                        var apiCallStart = DateTime.UtcNow;
+
                         // Send the request and get the response
                         var response = await _httpClient.SendAsync(request);
 
                         // Read the response content
                         responseStr = await response.Content.ReadAsStringAsync();
 
-                        _logger.LogInformation("Received Update Flow Response in function HandleFlowOps with received object {object} with response {response}", JsonConvert.SerializeObject(model), responseStr);
+                        _logger.LogInformation("Received Update Flow Response in function HandleFlowOps with apiEndpoint={apiEndpoint} with received object={object} with response={response} with apiResponseTime={apiResponseTime}", endpoint, JsonConvert.SerializeObject(model), responseStr, DateTime.UtcNow.Subtract(apiCallStart).TotalMicroseconds);
 
                         var updateFlow = JsonConvert.DeserializeObject<FlowAssetUploadResponse>(responseStr);
                         if (updateFlow != null)
@@ -1974,10 +1990,12 @@ namespace WhatsAppBridge.Handler
 
                     requestStr = JsonConvert.SerializeObject(flowRequest);
 
-                    var resp = await _httpClient.PostAsync($"/{senderNameInfo.BusinessAccountId}/flows", new StringContent(requestStr, null, "application/json"));
+                    var apiCallStart = DateTime.UtcNow;
+                    var endpoint = $"/{senderNameInfo.BusinessAccountId}/flows";
+                    var resp = await _httpClient.PostAsync(endpoint, new StringContent(requestStr, null, "application/json"));
                     responseStr = await resp.Content.ReadAsStringAsync();
 
-                    _logger.LogInformation("Received Create Flow Response in function HandleFlowOps with received object {object} with request {request} and response {response}", JsonConvert.SerializeObject(model), requestStr, responseStr);
+                    _logger.LogInformation("Received Create Flow Response in function HandleFlowOps with apiEndpoint={apiEndpoint} with received object={object} with request={request} and response={response} with apiResponseTime={apiResponseTime}", endpoint, JsonConvert.SerializeObject(model), requestStr, responseStr, DateTime.UtcNow.Subtract(apiCallStart).TotalMicroseconds);
 
                     var createFlow = JsonConvert.DeserializeObject<CreateFlowResponseModel>(responseStr);
                     if (createFlow != null)
@@ -2024,7 +2042,7 @@ namespace WhatsAppBridge.Handler
             }
             catch (Exception ex)
             {
-                _logger.LogError("Exception occurred {exception} when executing function HandleFlowOps with received object {object} with request {request} and response {response}", ex, JsonConvert.SerializeObject(model), requestStr, responseStr);
+                _logger.LogError("Exception occurred {exception} when executing function HandleFlowOps with received object={object} with request={request} and response={response}", ex, JsonConvert.SerializeObject(model), requestStr, responseStr);
             }
             finally //Delete the saved flow JSON file
             {
@@ -2051,7 +2069,7 @@ namespace WhatsAppBridge.Handler
 
             try
             {
-                _logger.LogDebug("Calling function HandlePublishFlow with received object {object}", JsonConvert.SerializeObject(model));
+                _logger.LogDebug("Calling function HandlePublishFlow with received object={object}", JsonConvert.SerializeObject(model));
 
                 var senderNameInfo = await _integrationHandler.GetSenderInformation(model.ClientId, model.SenderNameId);
                 if (senderNameInfo == null)
@@ -2059,10 +2077,12 @@ namespace WhatsAppBridge.Handler
 
                 _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {senderNameInfo.AccessToken}");
 
-                var resp = await _httpClient.PostAsync($"/{model.FlowId}/publish", new StringContent(requestStr, null, "application/json"));
+                var apiCallStart = DateTime.UtcNow;
+                var endpoint = $"/{model.FlowId}/publish";
+                var resp = await _httpClient.PostAsync(endpoint, new StringContent(requestStr, null, "application/json"));
                 responseStr = await resp.Content.ReadAsStringAsync();
 
-                _logger.LogInformation("Received Publish Flow Response in function HandlePublishFlow with received object {object} with request {request} and response {response}", JsonConvert.SerializeObject(model), requestStr, responseStr);
+                _logger.LogInformation("Received Publish Flow Response in function HandlePublishFlow with apiEndpoint={apiEndpoint} with received object={object} with request={request} and response={response} with apiResponseTime={apiResponseTime}", endpoint, JsonConvert.SerializeObject(model), requestStr, responseStr, DateTime.UtcNow.Subtract(apiCallStart).TotalMicroseconds);
 
                 var publishFlow = JsonConvert.DeserializeObject<PublishFlowResponseModel>(responseStr);
                 if (publishFlow != null)
@@ -2121,7 +2141,7 @@ namespace WhatsAppBridge.Handler
             }
             catch (Exception ex)
             {
-                _logger.LogError("Exception occurred {exception} when executing function HandlePublishFlow with received object {object} with request {request} and response {response}", ex, JsonConvert.SerializeObject(model), requestStr, responseStr);
+                _logger.LogError("Exception occurred {exception} when executing function HandlePublishFlow with received object={object} with request={request} and response={response}", ex, JsonConvert.SerializeObject(model), requestStr, responseStr);
             }
 
             return new ApiResult

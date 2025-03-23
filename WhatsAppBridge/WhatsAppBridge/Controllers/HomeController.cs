@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using WhatsAppBridge.Handler;
 
 namespace WhatsAppBridge.Controllers
 {
@@ -9,17 +10,21 @@ namespace WhatsAppBridge.Controllers
     public class HomeController : ControllerBase
     {
         private readonly ILogger<HomeController> _logger;
+        private readonly IntegrationHandler _integrationHandler;
 
-        public HomeController(ILogger<HomeController> logger)
+        public HomeController(ILogger<HomeController> logger,
+            IntegrationHandler integrationHandler)
         {
             _logger = logger;
+            _integrationHandler = integrationHandler;
         }
 
         [HttpGet]
         [Route("/")]
-        public IActionResult Index()
-        { 
-            return Content("Alive");
+        public async Task<IActionResult> Index()
+        {
+            var a = await _integrationHandler.GetClientInformation("1");
+            return Ok(a);
         }
     }
 }

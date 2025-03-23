@@ -1,7 +1,5 @@
-
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -12,6 +10,7 @@ using WhatsAppBridge.Handler;
 using WhatsAppBridge.Helpers;
 using WhatsAppBridge.Middleware;
 using WhatsAppBridge.Models;
+using WhatsAppBridge.Services;
 using WhatsAppBridge.Settings;
 
 namespace WhatsAppBridge
@@ -24,8 +23,9 @@ namespace WhatsAppBridge
 
             //Add support to logging with SERILOG
             //builder.Host.UseSerilog((context, configuration) => configuration.ReadFrom.Configuration(context.Configuration).Enrich.FromLogContext());
-            
+
             // Get log level from configuration
+            var queueSize = builder.Configuration.GetValue<long>("Axiom:QueueLimitBytes");
             var logLevel = builder.Configuration.GetValue<string>("Logging:LogLevel:Default");
             var minLevel = logLevel switch
             {
@@ -42,7 +42,7 @@ namespace WhatsAppBridge
                 .MinimumLevel.Override("System", LogEventLevel.Error)  // Only show Errors for System logs
                 .WriteTo.Http(
                     requestUri: builder.Configuration["Axiom:LogURL"],
-                    queueLimitBytes: null,
+                    queueLimitBytes: queueSize,
                     httpClient: new CustomHttpClient(),
                     configuration: builder.Configuration)
                 .CreateLogger();
@@ -50,6 +50,7 @@ namespace WhatsAppBridge
             builder.Host.UseSerilog(logger);
 
             // Add services to the container. 
+            builder.Services.AddMemoryCache();
 
             //DO NOT CHANGE ORDER OF THE SERVICES
 
@@ -57,6 +58,7 @@ namespace WhatsAppBridge
             builder.Services.Configure<AuthenticationConfigurationSettings>(builder.Configuration.GetSection(AuthenticationConfigurationSettings.ConfigKey));
             builder.Services.Configure<WhatsAppConfigurationSetting>(builder.Configuration.GetSection(WhatsAppConfigurationSetting.ConfigKey));
             builder.Services.Configure<IntegrationConfigurationSettings>(builder.Configuration.GetSection(IntegrationConfigurationSettings.ConfigKey));
+            builder.Services.Configure<CacheSettings>(builder.Configuration.GetSection(CacheSettings.ConfigKey));
 
             //Global HttpClient
             builder.Services.AddHttpClient(HttpClientType.facebook_graph_api, (serviceProvider, httpClient) =>
@@ -77,6 +79,10 @@ namespace WhatsAppBridge
                 httpClient.Timeout = TimeSpan.FromSeconds(integrationConfiguration.TimeOutInSeconds);
             });
 
+            //Add cache service
+            builder.Services.AddSingleton<CacheService>();
+
+            //Add additional services
             builder.Services.AddScoped<WhatsAppWebhookHandler>();
             builder.Services.AddScoped<IntegrationHandler>();
             builder.Services.AddScoped<WhatsAppHandler>();
@@ -116,7 +122,7 @@ namespace WhatsAppBridge
                 var schemaHelper = new SwashbuckleSchemaHelper();
                 c.CustomSchemaIds(type => schemaHelper.GetSchemaId(type));
 
-                c.SwaggerDoc("v1", new OpenApiInfo { Title = "ServiceName", Version = "1" }); 
+                c.SwaggerDoc("v1", new OpenApiInfo { Title = "ServiceName", Version = "1" });
                 c.AddSecurityDefinition("ApiKey", new OpenApiSecurityScheme
                 {
                     Name = "x-api-key",
@@ -147,6 +153,12 @@ namespace WhatsAppBridge
 
             if (enableGlobalExceptionHandler)
                 app.UseExceptionHandlerMiddleware();
+
+            bool enableRequestResponseLoggingHandler = Convert.ToBoolean(builder.Configuration["EnableRequestResponseLoggingHandler"]);
+
+            // Register the custom middleware for logging request/response times
+            if (enableRequestResponseLoggingHandler)
+                app.UseRequestResponseLoggingMiddleware();
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())

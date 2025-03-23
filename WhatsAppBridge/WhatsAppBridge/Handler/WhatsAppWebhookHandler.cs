@@ -22,7 +22,6 @@ namespace WhatsAppBridge.Handler
         private readonly IOptions<WhatsAppConfigurationSetting> _whatsAppConfigurationSetting;
         private readonly IntegrationHandler _integrationHandler;
         private readonly HttpClient _httpClient;
-        private readonly string baseUrl = String.Empty;
 
         #endregion
 
@@ -37,7 +36,6 @@ namespace WhatsAppBridge.Handler
             _whatsAppConfigurationSetting = whatsAppConfigurationSetting;
             _integrationHandler = integrationHandler;
             _httpClient = httpClientFactory.CreateClient(HttpClientType.facebook_graph_api);
-            baseUrl = _httpClient.BaseAddress.AbsoluteUri;
         }
 
         #endregion
@@ -112,19 +110,21 @@ namespace WhatsAppBridge.Handler
         {
             try
             {
-                _logger.LogDebug("Calling function HandleMessageTemplateStatusUpdate with received object {object}", JsonConvert.SerializeObject(change));
+                _logger.LogDebug("Calling function HandleMessageTemplateStatusUpdate with received object={object}", JsonConvert.SerializeObject(change));
 
                 TemplateUpdateWebhookModel templateUpdate = JsonConvert.DeserializeObject<TemplateUpdateWebhookModel>(JsonConvert.SerializeObject(change.value));
 
-                var fullUrl = CommonHelper.GetFullUrl(baseUrl, $"/{templateUpdate.message_template_id}");
-                _logger.LogDebug("Calling WhatsApp HandleMessageTemplateStatusUpdate method with templateId {templateId} with url {url}", templateUpdate.message_template_id, fullUrl);
+                var endpoint = $"/{templateUpdate.message_template_id}";
+                _logger.LogDebug("Calling WhatsApp HandleMessageTemplateStatusUpdate method with templateId={templateId} with apiEndpoint={apiEndpoint}", templateUpdate.message_template_id, endpoint);
 
                 var clientInfo = await _integrationHandler.GetClientInformation(clientId);
                 _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {clientInfo.AccessToken}");
-                var response = await _httpClient.GetAsync($"/{templateUpdate.message_template_id}");
+
+                var apiCallStart = DateTime.UtcNow;
+                var response = await _httpClient.GetAsync(endpoint);
                 var content = await response.Content.ReadAsStringAsync();
 
-                _logger.LogInformation("Received response of WhatsApp HandleMessageTemplateStatusUpdate method with templateId {templateId} with url {url} and content {content}", templateUpdate.message_template_id, fullUrl, content);
+                _logger.LogInformation("Received response of WhatsApp HandleMessageTemplateStatusUpdate method with templateId={templateId} with apiEndpoint={apiEndpoint} and content={content} with apiResponseTime={apiResponseTime}", templateUpdate.message_template_id, endpoint, content, DateTime.UtcNow.Subtract(apiCallStart).TotalMicroseconds);
 
                 var messageTemplate = JsonConvert.DeserializeObject<MessageTemplateModel>(await response.Content.ReadAsStringAsync());
 
@@ -133,7 +133,7 @@ namespace WhatsAppBridge.Handler
             }
             catch (Exception ex)
             {
-                _logger.LogError("Exception occurred {exception} when executing function HandleMessageTemplateStatusUpdate with received object {object}", ex, JsonConvert.SerializeObject(change));
+                _logger.LogError("Exception occurred {exception} when executing function HandleMessageTemplateStatusUpdate with received object={object}", ex, JsonConvert.SerializeObject(change));
             }
         }
 

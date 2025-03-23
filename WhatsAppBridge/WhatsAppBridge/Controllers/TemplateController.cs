@@ -64,7 +64,7 @@ namespace WhatsAppBridge.Controllers
             }
 
             var fullUrl = CommonHelper.GetFullUrl(baseUrl, $"/{messageTemplateId}");
-            _logger.LogDebug("Calling WhatsApp GetTemplateById method with templateId {templateId } with url {url}", messageTemplateId, fullUrl);
+            _logger.LogDebug("Calling WhatsApp GetTemplateById method with templateId={templateId} with url={url}", messageTemplateId, fullUrl);
 
             var clientInfo = await _integrationHandler.GetClientInformation(clientId);
             if (clientInfo == null)
@@ -76,11 +76,12 @@ namespace WhatsAppBridge.Controllers
                 });
             }
 
+            var apiCallStart = DateTime.UtcNow;
             _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {clientInfo.AccessToken}");
             var response = await _httpClient.GetAsync($"/{messageTemplateId}");
             var content = await response.Content.ReadAsStringAsync();
 
-            _logger.LogInformation("Received response of WhatsApp GetTemplateById method with templateId {templateId } with url {url} and content {content}", messageTemplateId, fullUrl, content);
+            _logger.LogInformation("Received response of WhatsApp GetTemplateById method with templateId={templateId} with apiEndpoint={apiEndpoint} and content={content} with apiResponseTime={apiResponseTime}", messageTemplateId, fullUrl, content, DateTime.UtcNow.Subtract(apiCallStart).TotalMicroseconds);
 
             var messageTemplate = JsonConvert.DeserializeObject<MessageTemplateModel>(await response.Content.ReadAsStringAsync());
 
@@ -119,7 +120,7 @@ namespace WhatsAppBridge.Controllers
 
             var fullUrl = CommonHelper.GetFullUrl(baseUrl, $"/{messageTemplateId}");
 
-            _logger.LogDebug("Calling WhatsApp SyncTemplatebyId method with templateId {templateId } with url {url}", messageTemplateId, fullUrl);
+            _logger.LogDebug("Calling WhatsApp SyncTemplatebyId method with templateId={templateId} with url={url}", messageTemplateId, fullUrl);
 
             var clientInfo = await _integrationHandler.GetClientInformation(clientId);
             if (clientInfo == null)
@@ -131,11 +132,12 @@ namespace WhatsAppBridge.Controllers
                 });
             }
 
+            var apiCallStart = DateTime.UtcNow;
             _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {clientInfo.AccessToken}");
             var response = await _httpClient.GetAsync($"/{messageTemplateId}");
             var content = await response.Content.ReadAsStringAsync();
 
-            _logger.LogInformation("Received response of WhatsApp SyncTemplatebyId method with templateId {templateId } with url {url} and content {content}", messageTemplateId, fullUrl, content);
+            _logger.LogInformation("Received response of WhatsApp SyncTemplatebyId method with templateId={templateId} with apiEndpoint={apiEndpoint} and content={content} with apiResponseTime={apiResponseTime}", messageTemplateId, fullUrl, content, DateTime.UtcNow.Subtract(apiCallStart).TotalMicroseconds);
 
             var messageTemplate = JsonConvert.DeserializeObject<MessageTemplateModel>(await response.Content.ReadAsStringAsync());
 
