@@ -124,7 +124,7 @@ namespace WhatsAppBridge.Handler
                 var response = await _httpClient.GetAsync(endpoint);
                 var content = await response.Content.ReadAsStringAsync();
 
-                _logger.LogInformation("Received response of WhatsApp HandleMessageTemplateStatusUpdate method with templateId={templateId} with apiEndpoint={apiEndpoint} and content={content} with apiResponseTime={apiResponseTime}", templateUpdate.message_template_id, endpoint, content, DateTime.UtcNow.Subtract(apiCallStart).TotalMicroseconds);
+                _logger.LogInformation("Received response of WhatsApp HandleMessageTemplateStatusUpdate method with templateId={templateId} with apiEndpoint={apiEndpoint} and content={content} with apiResponseTime={apiResponseTime}", templateUpdate.message_template_id, endpoint, content, DateTime.UtcNow.Subtract(apiCallStart).TotalMilliseconds);
 
                 var messageTemplate = JsonConvert.DeserializeObject<MessageTemplateModel>(await response.Content.ReadAsStringAsync());
 

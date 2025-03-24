@@ -60,7 +60,7 @@ namespace WhatsAppBridge.Handler
                     var response = await _httpClient.GetAsync(endpoint);
                     responseStr = await response.Content.ReadAsStringAsync();
 
-                    _logger.LogInformation("Received response when executing function GetClientInformation of Integration GetClientInformation method with clientId={clientId} with apiEndpoint={apiEndpoint} and request={request} and content={content} with apiResponseTime={apiResponseTime}", clientId, endpoint, requestStr, responseStr, DateTime.UtcNow.Subtract(apiCallStart).TotalMicroseconds);
+                    _logger.LogInformation("Received response when executing function GetClientInformation of Integration GetClientInformation method with clientId={clientId} with apiEndpoint={apiEndpoint} and request={request} and content={content} with apiResponseTime={apiResponseTime}", clientId, endpoint, requestStr, responseStr, DateTime.UtcNow.Subtract(apiCallStart).TotalMilliseconds);
 
                     var result = JsonConvert.DeserializeObject<ApiResult>(responseStr);
                     if (result != null && result.Success)
@@ -103,7 +103,7 @@ namespace WhatsAppBridge.Handler
                     var response = await _httpClient.GetAsync(endpoint);
                     responseStr = await response.Content.ReadAsStringAsync();
 
-                    _logger.LogInformation("Received response when executing function GetSenderInformation of Integration GetClientInformation method with clientId={clientId} and senderNameId={senderNameId} with apiEndpoint={apiEndpoint} and request={request} and content={content} and apiResponseTime={apiResponseTime}", clientId, senderNameId, endpoint, requestStr, responseStr, DateTime.UtcNow.Subtract(apiCallStart).TotalMicroseconds);
+                    _logger.LogInformation("Received response when executing function GetSenderInformation of Integration GetClientInformation method with clientId={clientId} and senderNameId={senderNameId} with apiEndpoint={apiEndpoint} and request={request} and content={content} and apiResponseTime={apiResponseTime}", clientId, senderNameId, endpoint, requestStr, responseStr, DateTime.UtcNow.Subtract(apiCallStart).TotalMilliseconds);
 
                     var result = JsonConvert.DeserializeObject<ApiResult>(responseStr);
                     if (result != null && result.Success)
@@ -148,7 +148,7 @@ namespace WhatsAppBridge.Handler
                     else
                         responseStr = await response.Content.ReadAsStringAsync();
 
-                    _logger.LogInformation("Received response when executing function SendMessageStatusUpdate of Integration whatsappmessagestatusupdate method with clientId={clientId} with apiEndpoint={apiEndpoint} and request={request} and content={content} with apiResponseTime={apiResponseTime}", updateDto.client_Id, endpoint, requestStr, responseStr, DateTime.UtcNow.Subtract(apiCallStart).TotalMicroseconds);
+                    _logger.LogInformation("Received response when executing function SendMessageStatusUpdate of Integration whatsappmessagestatusupdate method with clientId={clientId} with apiEndpoint={apiEndpoint} and request={request} and content={content} with apiResponseTime={apiResponseTime}", updateDto.client_Id, endpoint, requestStr, responseStr, DateTime.UtcNow.Subtract(apiCallStart).TotalMilliseconds);
                 }
                 catch (Exception ex)
                 {
@@ -202,7 +202,7 @@ namespace WhatsAppBridge.Handler
                         var response = await _httpClient.PostAsync(endpoint, new StringContent(requestStr, null, "application/json"));
                         responseStr = await response.Content.ReadAsStringAsync();
 
-                        _logger.LogInformation("Received response when executing function SendMessageTemplateStatusUpdate of Integration TemplatePost method with templateId={templateId} with apiEndpoint={apiEndpoint} and request={request} and content={content} with apiResponseTime={apiResponseTime}", templateDto.Id, endpoint, requestStr, responseStr, DateTime.UtcNow.Subtract(apiCallStart).TotalMicroseconds);
+                        _logger.LogInformation("Received response when executing function SendMessageTemplateStatusUpdate of Integration TemplatePost method with templateId={templateId} with apiEndpoint={apiEndpoint} and request={request} and content={content} with apiResponseTime={apiResponseTime}", templateDto.Id, endpoint, requestStr, responseStr, DateTime.UtcNow.Subtract(apiCallStart).TotalMilliseconds);
                     }
                     catch (Exception ex)
                     {
@@ -249,7 +249,7 @@ namespace WhatsAppBridge.Handler
                     else
                         responseStr = await response.Content.ReadAsStringAsync();
 
-                    _logger.LogInformation("Received response when executing function MessageReceiveUpdate of Integration whatsappmessagereceive method with clientId={clientId} with apiEndpoint={apiEndpoint} and request={request} and content={content} with apiResponseTime={apiResponseTime}", updateDto.client_Id, endpoint, requestStr, responseStr, DateTime.UtcNow.Subtract(apiCallStart).TotalMicroseconds);
+                    _logger.LogInformation("Received response when executing function MessageReceiveUpdate of Integration whatsappmessagereceive method with clientId={clientId} with apiEndpoint={apiEndpoint} and request={request} and content={content} with apiResponseTime={apiResponseTime}", updateDto.client_Id, endpoint, requestStr, responseStr, DateTime.UtcNow.Subtract(apiCallStart).TotalMilliseconds);
 
                 }
                 catch (Exception ex)

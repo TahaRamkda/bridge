@@ -81,7 +81,7 @@ namespace WhatsAppBridge.Controllers
             var response = await _httpClient.GetAsync($"/{messageTemplateId}");
             var content = await response.Content.ReadAsStringAsync();
 
-            _logger.LogInformation("Received response of WhatsApp GetTemplateById method with templateId={templateId} with apiEndpoint={apiEndpoint} and content={content} with apiResponseTime={apiResponseTime}", messageTemplateId, fullUrl, content, DateTime.UtcNow.Subtract(apiCallStart).TotalMicroseconds);
+            _logger.LogInformation("Received response of WhatsApp GetTemplateById method with templateId={templateId} with apiEndpoint={apiEndpoint} and content={content} with apiResponseTime={apiResponseTime}", messageTemplateId, fullUrl, content, DateTime.UtcNow.Subtract(apiCallStart).TotalMilliseconds);
 
             var messageTemplate = JsonConvert.DeserializeObject<MessageTemplateModel>(await response.Content.ReadAsStringAsync());
 
@@ -137,7 +137,7 @@ namespace WhatsAppBridge.Controllers
             var response = await _httpClient.GetAsync($"/{messageTemplateId}");
             var content = await response.Content.ReadAsStringAsync();
 
-            _logger.LogInformation("Received response of WhatsApp SyncTemplatebyId method with templateId={templateId} with apiEndpoint={apiEndpoint} and content={content} with apiResponseTime={apiResponseTime}", messageTemplateId, fullUrl, content, DateTime.UtcNow.Subtract(apiCallStart).TotalMicroseconds);
+            _logger.LogInformation("Received response of WhatsApp SyncTemplatebyId method with templateId={templateId} with apiEndpoint={apiEndpoint} and content={content} with apiResponseTime={apiResponseTime}", messageTemplateId, fullUrl, content, DateTime.UtcNow.Subtract(apiCallStart).TotalMilliseconds);
 
             var messageTemplate = JsonConvert.DeserializeObject<MessageTemplateModel>(await response.Content.ReadAsStringAsync());
 

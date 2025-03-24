@@ -21,33 +21,35 @@ namespace WhatsAppBridge
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            //Add support to logging with SERILOG
-            //builder.Host.UseSerilog((context, configuration) => configuration.ReadFrom.Configuration(context.Configuration).Enrich.FromLogContext());
+            //Logging related logic
+            var loggingEnabled = builder.Configuration.GetValue<bool>("LogSettings:LoggingEnabled");
+            if (loggingEnabled)
+            { 
+                // Get log level from configuration
+                var queueSize = builder.Configuration.GetValue<long>("Axiom:QueueLimitBytes");
+                var logLevel = builder.Configuration.GetValue<string>("LogSettings:LogLevel");
+                var minLevel = logLevel switch
+                {
+                    "Debug" => LogEventLevel.Debug,
+                    "Information" => LogEventLevel.Information,
+                    "Warning" => LogEventLevel.Warning,
+                    "Error" => LogEventLevel.Error,
+                    _ => LogEventLevel.Information // Default level
+                };
 
-            // Get log level from configuration
-            var queueSize = builder.Configuration.GetValue<long>("Axiom:QueueLimitBytes");
-            var logLevel = builder.Configuration.GetValue<string>("Logging:LogLevel:Default");
-            var minLevel = logLevel switch
-            {
-                "Debug" => LogEventLevel.Debug,
-                "Information" => LogEventLevel.Information,
-                "Warning" => LogEventLevel.Warning,
-                "Error" => LogEventLevel.Error,
-                _ => LogEventLevel.Information // Default level
-            };
+                var logger = new LoggerConfiguration()
+                    .MinimumLevel.Is(minLevel) // Dynamically apply level
+                    .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)  // Suppress low-level framework logs
+                    .MinimumLevel.Override("System", LogEventLevel.Error)  // Only show Errors for System logs
+                    .WriteTo.Http(
+                        requestUri: builder.Configuration["Axiom:LogURL"],
+                        queueLimitBytes: queueSize,
+                        httpClient: new CustomHttpClient(),
+                        configuration: builder.Configuration)
+                    .CreateLogger();
 
-            var logger = new LoggerConfiguration()
-                .MinimumLevel.Is(minLevel) // Dynamically apply level
-                .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)  // Suppress low-level framework logs
-                .MinimumLevel.Override("System", LogEventLevel.Error)  // Only show Errors for System logs
-                .WriteTo.Http(
-                    requestUri: builder.Configuration["Axiom:LogURL"],
-                    queueLimitBytes: queueSize,
-                    httpClient: new CustomHttpClient(),
-                    configuration: builder.Configuration)
-                .CreateLogger();
-
-            builder.Host.UseSerilog(logger);
+                builder.Host.UseSerilog(logger);
+            }
 
             // Add services to the container. 
             builder.Services.AddMemoryCache();

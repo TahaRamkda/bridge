@@ -804,7 +804,7 @@ namespace WhatsAppBridge.Handler
                         var resp = await _httpClient.PostAsync("", new StringContent(requestStr, null, "application/json"));
                         responseStr = await resp.Content.ReadAsStringAsync();
 
-                        _logger.LogInformation("Received Batch Response in function HandleSendBatchMessage with received object={object} with batch size={batchSize} and totalbatchCount={totalbatchCount} and batchIndex={batchIndex} and batchRequest={batchRequest} and batchResponse={batchResponse} with apiResponseTime={apiResponseTime}", JsonConvert.SerializeObject(model), batchSize, batches.Count, (i + 1), requestStr, responseStr, DateTime.UtcNow.Subtract(apiCallStart).TotalMicroseconds);
+                        _logger.LogInformation("Received Batch Response in function HandleSendBatchMessage with received object={object} with batch size={batchSize} and totalbatchCount={totalbatchCount} and batchIndex={batchIndex} and batchRequest={batchRequest} and batchResponse={batchResponse} with apiResponseTime={apiResponseTime}", JsonConvert.SerializeObject(model), batchSize, batches.Count, (i + 1), requestStr, responseStr, DateTime.UtcNow.Subtract(apiCallStart).TotalMilliseconds);
 
                         var responseModel = JsonConvert.DeserializeObject<List<BatchMessageResponseModel>>(responseStr);
                         for (int j = 0; j < batch.Count; j++)
@@ -939,7 +939,7 @@ namespace WhatsAppBridge.Handler
                         var resp = await _httpClient.PostAsync("", new StringContent(requestStr, null, "application/json"));
                         responseStr = await resp.Content.ReadAsStringAsync();
 
-                        _logger.LogInformation("Received Batch Response in function HandleSendInteractiveMessage with received object={object} with batch size={batchSize} and totalbatchCount={totalbatchCount} and batchIndex={batchIndex} and batchRequest={batchRequest} and batchResponse={batchResponse} with apiResponseTime={apiResponseTime}", JsonConvert.SerializeObject(model), batchSize, batches.Count, (i + 1), requestStr, responseStr, DateTime.UtcNow.Subtract(apiCallStart).TotalMicroseconds);
+                        _logger.LogInformation("Received Batch Response in function HandleSendInteractiveMessage with received object={object} with batch size={batchSize} and totalbatchCount={totalbatchCount} and batchIndex={batchIndex} and batchRequest={batchRequest} and batchResponse={batchResponse} with apiResponseTime={apiResponseTime}", JsonConvert.SerializeObject(model), batchSize, batches.Count, (i + 1), requestStr, responseStr, DateTime.UtcNow.Subtract(apiCallStart).TotalMilliseconds);
 
                         var responseModel = JsonConvert.DeserializeObject<List<BatchMessageResponseModel>>(responseStr);
                         for (int j = 0; j < batch.Count; j++)
@@ -1211,7 +1211,7 @@ namespace WhatsAppBridge.Handler
                     resp = await _httpClient.PostAsync($"/{messageTemplateId}", new StringContent(requestStr, null, "application/json"));
                     responseStr = await resp.Content.ReadAsStringAsync();
 
-                    _logger.LogInformation("Received Update Template Message Response in function HandleMessageTemplateOps with received object={object} with request={request} and response={response} with apiResponseTime={apiResponseTime}", JsonConvert.SerializeObject(model), requestStr, responseStr, DateTime.UtcNow.Subtract(apiCallStart).TotalMicroseconds);
+                    _logger.LogInformation("Received Update Template Message Response in function HandleMessageTemplateOps with received object={object} with request={request} and response={response} with apiResponseTime={apiResponseTime}", JsonConvert.SerializeObject(model), requestStr, responseStr, DateTime.UtcNow.Subtract(apiCallStart).TotalMilliseconds);
 
                     var updateTemplate = JsonConvert.DeserializeObject<UpdateMessageTemplateResponseModel>(responseStr);
                     if (updateTemplate != null)
@@ -1260,7 +1260,7 @@ namespace WhatsAppBridge.Handler
                     resp = await _httpClient.PostAsync($"/{senderNameInfo.BusinessAccountId}/message_templates", new StringContent(requestStr, null, "application/json"));
                     responseStr = await resp.Content.ReadAsStringAsync();
 
-                    _logger.LogInformation("Received Create Template Message Response in function HandleMessageTemplateOps with received object={object} with request={request} and response={response} with apiResponseTime={apiResponseTime}", JsonConvert.SerializeObject(model), requestStr, responseStr, DateTime.UtcNow.Subtract(apiCallStart).TotalMicroseconds);
+                    _logger.LogInformation("Received Create Template Message Response in function HandleMessageTemplateOps with received object={object} with request={request} and response={response} with apiResponseTime={apiResponseTime}", JsonConvert.SerializeObject(model), requestStr, responseStr, DateTime.UtcNow.Subtract(apiCallStart).TotalMilliseconds);
 
                     var createTemplate = JsonConvert.DeserializeObject<CreateMessageTemplateResponseModel>(responseStr);
                     if (createTemplate != null)
@@ -1375,7 +1375,7 @@ namespace WhatsAppBridge.Handler
                         var resp = await _httpClient.PostAsync("", new StringContent(requestStr, null, "application/json"));
                         responseStr = await resp.Content.ReadAsStringAsync();
 
-                        _logger.LogInformation("Received Batch Response in function HandleSendBatchTemplateMessage with received object={object} with batch size={batchSize} and totalbatchCount={totalbatchCount} and batchIndex={batchIndex} and batchRequest={batchRequest} and batchResponse={batchResponse} with apiResponseTime={apiResponseTime}", JsonConvert.SerializeObject(model), batchSize, batches.Count, (i + 1), requestStr, responseStr, DateTime.UtcNow.Subtract(apiCallStart).TotalMicroseconds);
+                        _logger.LogInformation("Received Batch Response in function HandleSendBatchTemplateMessage with received object={object} with batch size={batchSize} and totalbatchCount={totalbatchCount} and batchIndex={batchIndex} and batchRequest={batchRequest} and batchResponse={batchResponse} with apiResponseTime={apiResponseTime}", JsonConvert.SerializeObject(model), batchSize, batches.Count, (i + 1), requestStr, responseStr, DateTime.UtcNow.Subtract(apiCallStart).TotalMilliseconds);
 
                         var responseModel = JsonConvert.DeserializeObject<List<BatchMessageResponseModel>>(responseStr);
                         for (int j = 0; j < batch.Count; j++)
@@ -1720,7 +1720,7 @@ namespace WhatsAppBridge.Handler
                     resp = await _httpClient.PostAsync(endpoint, new StringContent(requestStr, null, "application/json"));
                     responseStr = await resp.Content.ReadAsStringAsync();
 
-                    _logger.LogInformation("Received Update Template Message Response in function HandleCarouselTemplateOps with received object={object} with apiEndpoint={apiEndpoint} with request={request} and response={response} with apiResponseTime={apiResponseTime}", endpoint, JsonConvert.SerializeObject(model), requestStr, responseStr, DateTime.UtcNow.Subtract(apiCallStart).TotalMicroseconds);
+                    _logger.LogInformation("Received Update Template Message Response in function HandleCarouselTemplateOps with received object={object} with apiEndpoint={apiEndpoint} with request={request} and response={response} with apiResponseTime={apiResponseTime}", endpoint, JsonConvert.SerializeObject(model), requestStr, responseStr, DateTime.UtcNow.Subtract(apiCallStart).TotalMilliseconds);
 
                     var updateTemplate = JsonConvert.DeserializeObject<UpdateMessageTemplateResponseModel>(responseStr);
                     if (updateTemplate != null)
@@ -1771,7 +1771,7 @@ namespace WhatsAppBridge.Handler
                     resp = await _httpClient.PostAsync(endpoint, new StringContent(requestStr, null, "application/json"));
                     responseStr = await resp.Content.ReadAsStringAsync();
 
-                    _logger.LogInformation("Received Create Template Message Response in function HandleCarouselTemplateOps with received object={object} with apiEndpoint={apiEndpoint} with request={request} and response={response} with apiResponseTime={apiResponseTime}", endpoint, JsonConvert.SerializeObject(model), requestStr, responseStr, DateTime.UtcNow.Subtract(apiCallStart).TotalMicroseconds);
+                    _logger.LogInformation("Received Create Template Message Response in function HandleCarouselTemplateOps with received object={object} with apiEndpoint={apiEndpoint} with request={request} and response={response} with apiResponseTime={apiResponseTime}", endpoint, JsonConvert.SerializeObject(model), requestStr, responseStr, DateTime.UtcNow.Subtract(apiCallStart).TotalMilliseconds);
 
                     var createTemplate = JsonConvert.DeserializeObject<CreateMessageTemplateResponseModel>(responseStr);
                     if (createTemplate != null)
@@ -1920,7 +1920,7 @@ namespace WhatsAppBridge.Handler
                         // Read the response content
                         responseStr = await response.Content.ReadAsStringAsync();
 
-                        _logger.LogInformation("Received Update Flow Response in function HandleFlowOps with apiEndpoint={apiEndpoint} with received object={object} with response={response} with apiResponseTime={apiResponseTime}", endpoint, JsonConvert.SerializeObject(model), responseStr, DateTime.UtcNow.Subtract(apiCallStart).TotalMicroseconds);
+                        _logger.LogInformation("Received Update Flow Response in function HandleFlowOps with apiEndpoint={apiEndpoint} with received object={object} with response={response} with apiResponseTime={apiResponseTime}", endpoint, JsonConvert.SerializeObject(model), responseStr, DateTime.UtcNow.Subtract(apiCallStart).TotalMilliseconds);
 
                         var updateFlow = JsonConvert.DeserializeObject<FlowAssetUploadResponse>(responseStr);
                         if (updateFlow != null)
@@ -1995,7 +1995,7 @@ namespace WhatsAppBridge.Handler
                     var resp = await _httpClient.PostAsync(endpoint, new StringContent(requestStr, null, "application/json"));
                     responseStr = await resp.Content.ReadAsStringAsync();
 
-                    _logger.LogInformation("Received Create Flow Response in function HandleFlowOps with apiEndpoint={apiEndpoint} with received object={object} with request={request} and response={response} with apiResponseTime={apiResponseTime}", endpoint, JsonConvert.SerializeObject(model), requestStr, responseStr, DateTime.UtcNow.Subtract(apiCallStart).TotalMicroseconds);
+                    _logger.LogInformation("Received Create Flow Response in function HandleFlowOps with apiEndpoint={apiEndpoint} with received object={object} with request={request} and response={response} with apiResponseTime={apiResponseTime}", endpoint, JsonConvert.SerializeObject(model), requestStr, responseStr, DateTime.UtcNow.Subtract(apiCallStart).TotalMilliseconds);
 
                     var createFlow = JsonConvert.DeserializeObject<CreateFlowResponseModel>(responseStr);
                     if (createFlow != null)
@@ -2082,7 +2082,7 @@ namespace WhatsAppBridge.Handler
                 var resp = await _httpClient.PostAsync(endpoint, new StringContent(requestStr, null, "application/json"));
                 responseStr = await resp.Content.ReadAsStringAsync();
 
-                _logger.LogInformation("Received Publish Flow Response in function HandlePublishFlow with apiEndpoint={apiEndpoint} with received object={object} with request={request} and response={response} with apiResponseTime={apiResponseTime}", endpoint, JsonConvert.SerializeObject(model), requestStr, responseStr, DateTime.UtcNow.Subtract(apiCallStart).TotalMicroseconds);
+                _logger.LogInformation("Received Publish Flow Response in function HandlePublishFlow with apiEndpoint={apiEndpoint} with received object={object} with request={request} and response={response} with apiResponseTime={apiResponseTime}", endpoint, JsonConvert.SerializeObject(model), requestStr, responseStr, DateTime.UtcNow.Subtract(apiCallStart).TotalMilliseconds);
 
                 var publishFlow = JsonConvert.DeserializeObject<PublishFlowResponseModel>(responseStr);
                 if (publishFlow != null)
