@@ -21,6 +21,9 @@ namespace WhatsAppBridge
         {
             var builder = WebApplication.CreateBuilder(args);
 
+            //Add database logging support to logging with SERILOG
+            //builder.Host.UseSerilog((context, configuration) => configuration.ReadFrom.Configuration(context.Configuration).Enrich.FromLogContext());
+
             //Logging related logic
             var loggingEnabled = builder.Configuration.GetValue<bool>("LogSettings:LoggingEnabled");
             if (loggingEnabled)

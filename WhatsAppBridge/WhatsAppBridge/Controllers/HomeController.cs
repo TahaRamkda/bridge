@@ -10,21 +10,18 @@ namespace WhatsAppBridge.Controllers
     public class HomeController : ControllerBase
     {
         private readonly ILogger<HomeController> _logger;
-        private readonly IntegrationHandler _integrationHandler;
 
-        public HomeController(ILogger<HomeController> logger,
-            IntegrationHandler integrationHandler)
+        public HomeController(ILogger<HomeController> logger)
         {
             _logger = logger;
-            _integrationHandler = integrationHandler;
         }
 
         [HttpGet]
         [Route("/")]
-        public async Task<IActionResult> Index()
+        public IActionResult Index()
         {
-            var a = await _integrationHandler.GetClientInformation("1");
-            return Ok(a);
+            _logger.LogInformation("I am alive");
+            return Content("Alive");
         }
     }
 }
