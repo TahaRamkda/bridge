@@ -136,6 +136,14 @@ namespace WhatsAppBridge.Handler
 
                 try
                 {
+                    //This is to avoid the deadlocks in database when facebook is sending message status update very frequently for same WA ID
+                    if (_integrationConfigurationSettings.Value.DelaySendingStatusUpdate)
+                    {
+                        Random random = new Random();
+                        int delayMilliseconds = random.Next(1000, 5001); // Random delay between 1000ms (1s) and 5000ms (5s)
+                        await Task.Delay(delayMilliseconds); // Asynchronous delay
+                    }
+
                     requestStr = JsonConvert.SerializeObject(updateDto);
                     endpoint = $"/bridge/whatsappmessagestatusupdate";
 
