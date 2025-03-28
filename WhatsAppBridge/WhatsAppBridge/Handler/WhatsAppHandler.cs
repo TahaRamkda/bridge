@@ -507,7 +507,7 @@ namespace WhatsAppBridge.Handler
             _logger.LogDebug("Processing file in function HandleMediaUpload with item={item}", JsonConvert.SerializeObject(item));
 
             //MediaPath
-            var mediaDirectory = String.Concat(_webHostEnvironment.ContentRootPath, "Media");
+            var mediaDirectory = Path.Combine(_webHostEnvironment.ContentRootPath, "Media");
             if (!Directory.Exists(mediaDirectory))
                 Directory.CreateDirectory(mediaDirectory);
 
@@ -639,8 +639,11 @@ namespace WhatsAppBridge.Handler
                     _logger.LogError("Error in processing file in function UploadMediaAsset with url={url}, item does not have URL", url);
                 }
 
+                //Dirty fix, will rectify in API solution
+                url = url.Replace("\\", "/");
+
                 //MediaPath
-                var mediaDirectory = String.Concat(_webHostEnvironment.ContentRootPath, "MediaAssets");
+                var mediaDirectory = Path.Combine(_webHostEnvironment.ContentRootPath, "MediaAssets");
                 if (!Directory.Exists(mediaDirectory))
                     Directory.CreateDirectory(mediaDirectory);
 
