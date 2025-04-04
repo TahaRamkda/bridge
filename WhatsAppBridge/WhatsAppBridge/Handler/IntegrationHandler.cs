@@ -17,8 +17,7 @@ namespace WhatsAppBridge.Handler
         private readonly ILogger<IntegrationHandler> _logger;
         private readonly IOptions<IntegrationConfigurationSettings> _integrationConfigurationSettings;
         private readonly HttpClient _httpClient;
-        private readonly CacheService _cacheService;
-
+        private readonly ICacheService _cacheService;
         #endregion
 
         #region Ctor
@@ -26,7 +25,7 @@ namespace WhatsAppBridge.Handler
         public IntegrationHandler(ILogger<IntegrationHandler> logger,
           IOptions<IntegrationConfigurationSettings> integrationConfigurationSettings,
           IHttpClientFactory httpClientFactory,
-          CacheService cacheService)
+          ICacheService cacheService)
         {
             _logger = logger;
             _integrationConfigurationSettings = integrationConfigurationSettings;
@@ -43,13 +42,13 @@ namespace WhatsAppBridge.Handler
             string requestStr = String.Empty;
             string endpoint = String.Empty;
             string responseStr = String.Empty;
+            string cacheKey = String.Format(CacheKeys.CLIENTS_BY_ID_KEY, clientId);
 
             try
             {
                 _logger.LogDebug("Calling function GetClientInformation with clientId={clientId}", clientId);
 
-                string cacheKey = String.Format(CacheKeys.ClientKey, clientId);
-                return await _cacheService.GetOrSet(cacheKey, async () =>
+                var cachedResult = await _cacheService.GetAsync(cacheKey, async () =>
                 {
                     _logger.LogDebug("Executing function GetClientInformation Calling Integration GetClientAccessToken method with clientId={clientId}", clientId);
 
@@ -72,9 +71,18 @@ namespace WhatsAppBridge.Handler
 
                     return null;
                 });
+
+                //If result is null due to some reason, empty cache immediately
+                if (cachedResult == null)
+                    await _cacheService.RemoveAsync(cacheKey);
+
+                return cachedResult;
             }
             catch (Exception ex)
             {
+                //If result is null due to some reason, empty cache immediately
+                await _cacheService.RemoveAsync(cacheKey);
+
                 _logger.LogError("Exception occurred {exception} when executing function GetClientInformation of Integration GetClientAccessToken method with clientId={clientId} with apiEndpoint={apiEndpoint} and request={request} and content={content}", ex, clientId, endpoint, requestStr, responseStr);
             }
 
@@ -86,13 +94,13 @@ namespace WhatsAppBridge.Handler
             string requestStr = String.Empty;
             string endpoint = String.Empty;
             string responseStr = String.Empty;
+            string cacheKey = String.Format(CacheKeys.SENDERS_BY_CLIENTID_SENDERID_KEY, clientId, senderNameId);
 
             try
             {
                 _logger.LogDebug("Calling function GetSenderInformation with clientId={clientId} and senderNameId={senderNameId}", clientId, senderNameId);
 
-                string cacheKey = String.Format(CacheKeys.ClientSenderKey, clientId, senderNameId);
-                return await _cacheService.GetOrSet(cacheKey, async () =>
+                var cachedResult = await _cacheService.GetAsync(cacheKey, async () =>
                 {
                     _logger.LogDebug("Executing function GetSenderInformation Calling Integration GetClientAccessToken method with clientId={clientId} and senderNameId={senderNameId}", clientId, senderNameId);
 
@@ -115,9 +123,18 @@ namespace WhatsAppBridge.Handler
 
                     return null;
                 });
+
+                //If result is null due to some reason, empty cache immediately
+                if (cachedResult == null)
+                    await _cacheService.RemoveAsync(cacheKey);
+
+                return cachedResult;
             }
             catch (Exception ex)
             {
+                //If result is null due to some reason, empty cache immediately
+                await _cacheService.RemoveAsync(cacheKey);
+
                 _logger.LogError("Exception occurred {exception} when executing function GetSenderInformation of Integration GetClientAccessToken method with clientId={clientId} and senderNameId={senderNameId} with apiEndpoint={apiEndpoint} and request={request} and content={content}", ex, clientId, senderNameId, endpoint, requestStr, responseStr);
             }
 
@@ -246,9 +263,9 @@ namespace WhatsAppBridge.Handler
                     endpoint = $"/bridge/whatsappmessagereceive";
                     if (updateDto.flowResponse != null)
                         endpoint = $"/bridge/flowresponse";
-                     
+
                     _logger.LogDebug("Executing function MessageReceiveUpdate Calling Integration whatsappmessagereceive method with clientId={clientId} with apiEndpoint={apiEndpoint} and request={request}", updateDto.client_Id, endpoint, requestStr);
-                     
+
                     var apiCallStart = DateTime.UtcNow;
                     var response = await _httpClient.PostAsync(endpoint, new StringContent(requestStr, null, "application/json"));
 

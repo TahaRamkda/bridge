@@ -1874,7 +1874,7 @@ namespace WhatsAppBridge.Handler
                 if (!String.IsNullOrWhiteSpace(model.FlowId))
                 {
                     //Flow Path
-                    var flowDirectory = String.Concat(_webHostEnvironment.ContentRootPath, "Flow");
+                    var flowDirectory = Path.Combine(_webHostEnvironment.ContentRootPath, "Flow");
                     if (!Directory.Exists(flowDirectory))
                         Directory.CreateDirectory(flowDirectory);
 

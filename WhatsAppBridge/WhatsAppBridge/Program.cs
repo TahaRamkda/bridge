@@ -84,8 +84,8 @@ namespace WhatsAppBridge
                 httpClient.Timeout = TimeSpan.FromSeconds(integrationConfiguration.TimeOutInSeconds);
             });
 
-            //Add cache service
-            builder.Services.AddSingleton<CacheService>();
+            //Add cache service 
+            builder.Services.AddSingleton<ICacheService, CacheService>();
 
             //Add additional services
             builder.Services.AddScoped<WhatsAppWebhookHandler>();
