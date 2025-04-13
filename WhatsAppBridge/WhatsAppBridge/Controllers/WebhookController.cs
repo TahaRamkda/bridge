@@ -1,8 +1,9 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using System.Security.Cryptography;
+using System.Text;
 using WhatsAppBridge.Crypto.Flow;
 using WhatsAppBridge.Handler;
 using WhatsAppBridge.Models;
@@ -32,6 +33,28 @@ namespace WhatsAppBridge.Controllers
             _integrationHandler = integrationHandler;
         }
 
+        #region Utilities
+
+        [NonAction]
+        private bool VerifyMetaWebhook(string body, string receivedSignature, string appSecret)
+        {
+            if (string.IsNullOrEmpty(receivedSignature) || !receivedSignature.StartsWith("sha1="))
+                return false;
+
+            var signature = receivedSignature.Substring(5); // remove "sha1="
+
+            var keyBytes = Encoding.UTF8.GetBytes(appSecret);
+            var bodyBytes = Encoding.UTF8.GetBytes(body);
+
+            using var hmac = new HMACSHA1(keyBytes);
+            var hashBytes = hmac.ComputeHash(bodyBytes);
+            var hashString = BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
+
+            return hashString == signature;
+        }
+
+        #endregion
+
         [HttpGet]
         public ActionResult Get([FromQuery(Name = "hub.mode")] string hubMode = "", [FromQuery(Name = "hub.challenge")] int hubChallenge = 0, [FromQuery(Name = "hub.verify_token")] string hubVerifyToken = "")
         {
@@ -55,10 +78,15 @@ namespace WhatsAppBridge.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Post(string clientId, object payload)
+        public async Task<IActionResult> Post(string clientId, object payload, [FromQuery(Name = "hub.verify_token")] string hubVerifyToken = "")
         {
             var data = System.Text.Json.JsonSerializer.Serialize(payload);
-            _logger.LogInformation("Facebook webhook received with clientId={clientId} and data={data}", clientId, data);
+            //var receivedSignature = Request.Headers["X-Hub-Signature"].ToString(); // e.g., sha1=abc123...
+            //var webhookVerified = VerifyMetaWebhook(data, receivedSignature, "bce037622c29bc27b113631a58cd885a");
+            //if (webhookVerified == false)
+            //    return BadRequest("Webhook is not verified");
+
+            _logger.LogInformation("Facebook webhook received with clientId={clientId}, and data={data}", clientId, data);
 
             var model = JsonConvert.DeserializeObject<WhatsAppWebhookModel>(data);
             if (model == null)
@@ -113,6 +141,6 @@ namespace WhatsAppBridge.Controllers
             var encryptedResponse = EncryptionUtils.EncryptResponse(response, decrypted.aesKeyBytes, decrypted.initialVectorBytes);
 
             return Ok(encryptedResponse);
-        }
+        } 
     }
 }

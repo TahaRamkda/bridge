@@ -430,6 +430,5 @@ namespace WhatsAppBridge.Controllers
             var response = await _whatsAppHandler.HandleSendBatchCarouselMessage(model);
             return Ok(response);
         }
-
     }
 }

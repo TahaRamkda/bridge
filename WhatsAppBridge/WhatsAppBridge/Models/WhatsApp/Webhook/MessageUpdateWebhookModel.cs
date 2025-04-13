@@ -113,6 +113,7 @@ namespace WhatsAppBridge.Models.WhatsApp.Webhook
             public Sticker sticker { get; set; }
             public Interactive interactive { get; set; }
             public Reaction reaction { get; set; }
+            public Order order { get; set; }
 
             public class Text
             {
@@ -205,6 +206,26 @@ namespace WhatsAppBridge.Models.WhatsApp.Webhook
             {
                 public string message_id { get; set; }
                 public string emoji { get; set; }
+            }
+
+            public class Order
+            {
+                public Order()
+                {
+                    product_items = new List<Item>();
+                }
+
+                public string catalog_id { get; set; }
+                public string text { get; set; }
+                public List<Item> product_items { get; set; }
+                  
+                public class Item
+                {
+                    public string product_retailer_id { get; set; }
+                    public string quantity { get; set; }
+                    public decimal item_price { get; set; }
+                    public string currency { get; set; }
+                }
             }
         }
     }

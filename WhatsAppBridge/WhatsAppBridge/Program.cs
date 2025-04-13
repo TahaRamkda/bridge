@@ -70,7 +70,6 @@ namespace WhatsAppBridge
             {
                 var whatsAppConfiguration = serviceProvider.GetRequiredService<IOptions<WhatsAppConfigurationSetting>>().Value;
 
-                //httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {whatsAppConfiguration.AccessToken}");
                 httpClient.BaseAddress = new Uri(whatsAppConfiguration.BaseURL);
                 httpClient.Timeout = TimeSpan.FromSeconds(whatsAppConfiguration.TimeOutInSeconds);
             });
@@ -79,7 +78,7 @@ namespace WhatsAppBridge
             {
                 var integrationConfiguration = serviceProvider.GetRequiredService<IOptions<IntegrationConfigurationSettings>>().Value;
 
-                httpClient.DefaultRequestHeaders.Add("X-API-KEY", $"Bearer {integrationConfiguration.ApiKey}");
+                httpClient.DefaultRequestHeaders.Add("X-API-KEY", $"{integrationConfiguration.ApiKey}");
                 httpClient.BaseAddress = new Uri(integrationConfiguration.BaseURL);
                 httpClient.Timeout = TimeSpan.FromSeconds(integrationConfiguration.TimeOutInSeconds);
             });

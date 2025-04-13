@@ -372,6 +372,30 @@ namespace WhatsAppBridge.Handler
                                 updateDto.flowResponse = GenerateFlowResponse(message.interactive.nfm_reply);
                         }
 
+                        if (message.order != null)
+                        {
+                            updateDto.order = new MessageReceiveDto.Order
+                            {
+                                catalog_id = message.order.catalog_id,
+                                text = message.order.text,
+                                product_items = new List<MessageReceiveDto.Order.Item>()
+                            };
+
+                            if (message.order.product_items != null && message.order.product_items.Count > 0)
+                            {
+                                foreach (var item in message.order.product_items)
+                                {
+                                    updateDto.order.product_items.Add(new MessageReceiveDto.Order.Item
+                                    {
+                                        product_retailer_id = item.product_retailer_id,
+                                        currency = item.currency,
+                                        item_price = item.item_price,
+                                        quantity = item.quantity
+                                    });
+                                }
+                            }
+                        }
+
                         await _integrationHandler.MessageReceiveUpdate(updateDto);
                     }
                 }

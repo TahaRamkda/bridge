@@ -740,6 +740,231 @@ namespace WhatsAppBridge.Handler
             return String.Empty;
         }
 
+        private SendMessageCarouselTemplateModel GetCarouselTemplateContent(SendMessageCarouselRequestDto model)
+        {
+            var template = new SendMessageCarouselTemplateModel
+            {
+                messaging_product = "whatsapp",
+                to = String.Empty,
+                recipient_type = "individual",
+                type = "template",
+                template = new SendMessageCarouselTemplateModel.Template
+                {
+                    name = model.TemplateName.EncodeSpecialCharacters(),
+                    language = new SendMessageCarouselTemplateModel.Template.Language
+                    {
+                        code = model.LanguageCode.EncodeSpecialCharacters()
+                    },
+                    components = new List<object>()
+                }
+            };
+
+            //Add body parameters
+            if (model.BodyParams != null && model.BodyParams.Any())
+            {
+                template.template.components.Add(new
+                {
+                    type = "body",
+                    parameters = model.BodyParams.Select(p => new { type = TemplateHeaderFormatTypeModel.TEXT.ToLower(), text = p })
+                });
+            }
+
+            if (model.Cards != null && model.Cards.Any())
+            {
+                var carouselComp = new
+                {
+                    type = "carousel",
+                    cards = new List<object>()
+                };
+
+                foreach (var card in model.Cards.OrderBy(x => x.Index))
+                {
+                    var cardObj = new
+                    {
+                        card_index = card.Index,
+                        components = new List<object>()
+                    };
+
+                    foreach (var obj in card.Components)
+                    {
+                        //HEADER TYPE COMPONENT
+                        if (obj.ComponentType.ToUpper() == TemplateComponentTypeModel.HEADER.ToUpper())
+                        {
+                            var component = new SendMessageTemplateModel.Template.Component
+                            {
+                                type = "HEADER"
+                            };
+
+                            foreach (var value in obj.Values.OrderBy(x => x.Index))
+                            {
+                                var valueType = value.Type.ToUpper();
+                                switch (valueType)
+                                {
+                                    case TemplateHeaderFormatTypeModel.NONE:
+                                        break;
+                                    case TemplateHeaderFormatTypeModel.TEXT:
+                                        component.parameters.Add(new
+                                        {
+                                            type = TemplateHeaderFormatTypeModel.TEXT.ToLower(),
+                                            text = value.Value.EncodeSpecialCharacters()
+                                        });
+                                        break;
+                                    case TemplateHeaderFormatTypeModel.IMAGE:
+                                        if (CommonHelper.IsValidUrl(value.Value))
+                                        {
+                                            component.parameters.Add(new
+                                            {
+                                                type = TemplateHeaderFormatTypeModel.IMAGE.ToLower(),
+                                                image = new
+                                                {
+                                                    link = value.Value.EncodeSpecialCharacters()
+                                                }
+                                            });
+                                        }
+                                        else
+                                        {
+                                            component.parameters.Add(new
+                                            {
+                                                type = TemplateHeaderFormatTypeModel.IMAGE.ToLower(),
+                                                image = new
+                                                {
+                                                    id = value.Value.EncodeSpecialCharacters()
+                                                }
+                                            });
+                                        }
+
+                                        break;
+                                    case TemplateHeaderFormatTypeModel.DOCUMENT:
+                                        if (CommonHelper.IsValidUrl(value.Value))
+                                        {
+                                            component.parameters.Add(new
+                                            {
+                                                type = TemplateHeaderFormatTypeModel.DOCUMENT.ToLower(),
+                                                document = new
+                                                {
+                                                    link = value.Value.EncodeSpecialCharacters()
+                                                }
+                                            });
+                                        }
+                                        else
+                                        {
+                                            component.parameters.Add(new
+                                            {
+                                                type = TemplateHeaderFormatTypeModel.DOCUMENT.ToLower(),
+                                                document = new
+                                                {
+                                                    id = value.Value.EncodeSpecialCharacters()
+                                                }
+                                            });
+                                        }
+
+                                        break;
+                                    case TemplateHeaderFormatTypeModel.VIDEO:
+                                        if (CommonHelper.IsValidUrl(value.Value))
+                                        {
+                                            component.parameters.Add(new
+                                            {
+                                                type = TemplateHeaderFormatTypeModel.VIDEO.ToLower(),
+                                                video = new
+                                                {
+                                                    link = value.Value.EncodeSpecialCharacters()
+                                                }
+                                            });
+                                        }
+                                        else
+                                        {
+                                            component.parameters.Add(new
+                                            {
+                                                type = TemplateHeaderFormatTypeModel.VIDEO.ToLower(),
+                                                video = new
+                                                {
+                                                    id = value.Value.EncodeSpecialCharacters()
+                                                }
+                                            });
+                                        }
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            }
+
+                            cardObj.components.Add(component);
+                        }
+                        else if (obj.ComponentType.ToUpper() == TemplateComponentTypeModel.BODY.ToUpper())
+                        {
+                            var component = new SendMessageTemplateModel.Template.Component
+                            {
+                                type = "BODY"
+                            };
+
+                            foreach (var value in obj.Values.OrderBy(x => x.Index))
+                            {
+                                component.parameters.Add(new
+                                {
+                                    type = TemplateHeaderFormatTypeModel.TEXT.ToLower(),
+                                    text = value.Value.EncodeSpecialCharacters()
+                                });
+                            }
+
+                            cardObj.components.Add(component);
+                        }
+                        else if (obj.ComponentType.ToUpper() == TemplateComponentTypeModel.BUTTONS.ToUpper()
+                            || obj.ComponentType.ToUpper() == TemplateComponentTypeModel.BUTTON.ToUpper())
+                        {
+                            foreach (var value in obj.Values.OrderBy(x => x.Index))
+                            {
+                                //For Button we pass as index
+                                var component = new SendMessageTemplateModel.Template.Component
+                                {
+                                    type = "BUTTON",
+                                    sub_type = value.Type,
+                                    index = value.Index
+                                };
+
+                                var valueType = value.Type.ToUpper();
+                                switch (valueType)
+                                {
+                                    case TemplateButtonTypeModel.QUICK_REPLY:
+                                        component.parameters.Add(new
+                                        {
+                                            //type = TemplateButtonTypeModel.QUICK_REPLY.ToLower(),
+                                            type = "text",
+                                            text = value.Value.EncodeSpecialCharacters()
+                                        });
+                                        break;
+                                    case TemplateButtonTypeModel.PHONE_NUMBER:
+                                        component.parameters.Add(new
+                                        {
+                                            type = "text",
+                                            text = value.Value.EncodeSpecialCharacters()
+                                        });
+                                        break;
+                                    case TemplateButtonTypeModel.URL:
+                                        component.parameters.Add(new
+                                        {
+                                            type = "text",
+                                            text = value.Value.EncodeSpecialCharacters()
+                                        });
+                                        break;
+
+                                    default:
+                                        break;
+                                }
+
+                                cardObj.components.Add(component);
+                            }
+                        }
+                    }
+
+                    carouselComp.cards.Add(cardObj);
+                }
+
+                template.template.components.Add(carouselComp);
+            }
+
+            return template;
+        }
+
         #endregion
 
         #region Methods
@@ -1837,7 +2062,127 @@ namespace WhatsAppBridge.Handler
         /// <returns></returns>
         public async Task<ApiResult> HandleSendBatchCarouselMessage(SendMessageCarouselRequestDto model)
         {
-            return null;
+            List<SendMessageResponseDto> models = new List<SendMessageResponseDto>();
+
+            try
+            {
+                model.PhoneNumbers = model.PhoneNumbers.Where(x => !String.IsNullOrWhiteSpace(x)).Select(x => x.Replace("+", "").Trim()).ToList();
+                int batchSize = _whatsAppConfigurationSetting.Value.SendMessageBatchSize;
+                var batches = model.PhoneNumbers.ChunkBy(batchSize);
+
+                _logger.LogDebug("Calling function HandleSendBatchCarouselMessage with received object={object} with batch size={batchSize} and totalbatchCount={totalbatchCount}", JsonConvert.SerializeObject(model), batchSize, batches.Count);
+
+                var template = GetCarouselTemplateContent(model);
+
+                var senderInfo = await _integrationHandler.GetSenderInformation(model.ClientId, model.SenderNameId);
+                if (senderInfo == null)
+                {
+                    return new ApiResult
+                    {
+                        StatusCode = 404,
+                        Message = $"Client not found with clientId: {model.ClientId}"
+                    };
+                }
+
+                _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {senderInfo.AccessToken}");
+
+                for (int i = 0; i < batches.Count; i++)
+                {
+                    string requestStr = String.Empty;
+                    string responseStr = String.Empty;
+
+                    try
+                    {
+                        var batch = batches[i];
+                        var batchRequest = new BatchMessageRequestModel
+                        {
+                            batch = batch.Select(recipient => new BatchMessageRequestModel.Batch
+                            {
+                                method = "POST",
+                                relative_url = $"{senderInfo.PhoneNumberId}/messages",
+                                body = $"messaging_product=whatsapp&recipient_type=individual&to={recipient}&type={template.type}&{template.type}={JsonConvert.SerializeObject(template.template)}"
+                            }).ToList()
+                        };
+
+                        requestStr = JsonConvert.SerializeObject(batchRequest);
+
+                        _logger.LogDebug("Created Batch Request in function HandleSendBatchCarouselMessage with received object={object} with batch size={batchSize} and totalbatchCount={totalbatchCount} and batchIndex={batchIndex} and batchRequest={batchRequest}", JsonConvert.SerializeObject(model), batchSize, batches.Count, (i + 1), requestStr);
+
+                        var apiCallStart = DateTime.UtcNow;
+
+                        // Send the batch request   
+                        var resp = await _httpClient.PostAsync("", new StringContent(requestStr, null, "application/json"));
+                        responseStr = await resp.Content.ReadAsStringAsync();
+
+                        _logger.LogInformation("Received Batch Response in function HandleSendBatchCarouselMessage with received object={object} with batch size={batchSize} and totalbatchCount={totalbatchCount} and batchIndex={batchIndex} and batchRequest={batchRequest} and batchResponse={batchResponse} with apiResponseTime={apiResponseTime}", JsonConvert.SerializeObject(model), batchSize, batches.Count, (i + 1), requestStr, responseStr, DateTime.UtcNow.Subtract(apiCallStart).TotalMilliseconds);
+
+                        var responseModel = JsonConvert.DeserializeObject<List<BatchMessageResponseModel>>(responseStr);
+                        for (int j = 0; j < batch.Count; j++)
+                        {
+                            var response = responseModel[j];
+                            response.bodyResponse = JsonConvert.DeserializeObject<BatchMessageResponseModel.BodyResponse>(response.body);
+
+                            if (response.code == 200) //If success
+                            {
+                                var responseDto = new SendMessageResponseDto
+                                {
+                                    Success = true,
+                                    PhoneNumber = response.bodyResponse.contacts[0].wa_id,
+                                    WAId = response.bodyResponse.messages[0].id,
+                                    Status = response.code,
+                                    MessageId = response.bodyResponse.messages[0].id
+                                };
+
+                                models.Add(responseDto);
+                            }
+                            else
+                            {
+                                var responseDto = new SendMessageResponseDto
+                                {
+                                    Success = false,
+                                    PhoneNumber = batch[j],
+                                    WAId = String.Empty,
+                                    Status = response.bodyResponse.error.code,
+                                    MessageId = String.Empty,
+                                    Errors = new List<string> {
+                                        response.bodyResponse.error.message
+                                    }
+                                };
+
+                                models.Add(responseDto);
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError("Exception occurred {exception} when executing function HandleSendBatchCarouselMessage with received object={object} with batch size={batchSize} and batchCount={batchCount} and batchIndex={batchIndex} and batchRequest={batchRequest} and batchResponse={batchResponse}", ex, JsonConvert.SerializeObject(model), batchSize, batches.Count, i, requestStr, responseStr);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Exception occurred {exception} when executing function HandleSendBatchCarouselMessage with received object={object}", ex, JsonConvert.SerializeObject(model));
+            }
+
+            _logger.LogDebug("Execution ends for function HandleSendBatchCarouselMessage with received object={object} and response={response}", JsonConvert.SerializeObject(model), JsonConvert.SerializeObject(models));
+
+            if (!models.Any())
+            {
+                return new ApiResult
+                {
+                    StatusCode = 400,
+                    Message = "Couldn't send messages",
+                    Result = models
+                };
+            }
+
+            return new ApiResult
+            {
+                Success = true,
+                StatusCode = 200,
+                Message = "Data processed succesfully",
+                Result = models
+            };
         }
 
         #endregion

@@ -1,11 +1,13 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using WhatsAppBridge.Handler;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using WhatsAppBridge.Services;
+using WhatsAppBridge.Settings;
 
 namespace WhatsAppBridge.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(Policy = AuthenticationSchemes.ApiKeyPolicy)]
     public class CacheController : ControllerBase
     {
         #region Fields

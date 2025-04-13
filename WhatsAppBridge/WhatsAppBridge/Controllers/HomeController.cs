@@ -19,7 +19,7 @@ namespace WhatsAppBridge.Controllers
         [HttpGet]
         [Route("/")]
         public IActionResult Index()
-        {
+        { 
             _logger.LogInformation("I am alive");
             return Content("Alive");
         }

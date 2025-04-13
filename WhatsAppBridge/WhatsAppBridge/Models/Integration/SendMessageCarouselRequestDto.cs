@@ -16,34 +16,34 @@
         public string TemplateName { get; set; }
         public List<string> PhoneNumbersList { get; set; }
         public List<string> BodyParams { get; set; }
-        //public List<CardComponent> Cards { get; set; }
-         
-        //public class CardComponent
-        //{
-        //    public CardComponent()
-        //    {
-        //    }
+        public List<CardComponent> Cards { get; set; }
 
-        //    public int Index { get; set; }
-        //    public List<Component> Components { get; set; }
-        //}
+        public class CardComponent
+        {
+            public CardComponent()
+            {
+            }
 
-        //public class Component
-        //{
-        //    public Component()
-        //    {
-        //        Values = new List<KeyValue>();
-        //    }
+            public int Index { get; set; }
+            public List<Component> Components { get; set; }
+        }
 
-        //    public string ComponentType { get; set; } 
-        //    public List<KeyValue> Values { get; set; }
-        //}
+        public class Component
+        {
+            public Component()
+            {
+                Values = new List<KeyValue>();
+            }
 
-        //public class KeyValue
-        //{
-        //    public string Type { get; set; }
-        //    public string Value { get; set; }
-        //    public int Index { get; set; }
-        //}
+            public string ComponentType { get; set; }
+            public List<KeyValue> Values { get; set; }
+        }
+
+        public class KeyValue
+        {
+            public string Type { get; set; }
+            public string Value { get; set; }
+            public int Index { get; set; }
+        }
     }
 }
