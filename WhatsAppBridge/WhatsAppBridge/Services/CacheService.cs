@@ -64,9 +64,16 @@ namespace WhatsAppBridge.Services
 
         public virtual async Task<T> GetAsync<T>(string key, Func<Task<T>> acquire, int cacheTime)
         {
-            if (_cache.TryGetValue(key, out T cacheEntry)) return cacheEntry;
+            //If caching is not enabled, return the object directly
+            if (!_cacheSettings.CachingEnabled)
+                return await acquire();
+
+            if (_cache.TryGetValue(key, out T cacheEntry)) 
+                return cacheEntry;
+         
             var semaphore = CacheEntries.GetOrAdd(key, _ => new SemaphoreSlim(1, 1));
             await semaphore.WaitAsync();
+            
             try
             {
                 if (!_cache.TryGetValue(key, out cacheEntry))
