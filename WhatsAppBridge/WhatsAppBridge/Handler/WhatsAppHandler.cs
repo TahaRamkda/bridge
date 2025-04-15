@@ -2,12 +2,9 @@
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using System;
 using System.Dynamic;
-using System.IO;
 using System.Net.Http.Headers;
 using System.Text;
-using System.Web;
 using WhatsAppBridge.Helpers;
 using WhatsAppBridge.Models;
 using WhatsAppBridge.Models.Integration;
@@ -16,7 +13,6 @@ using WhatsAppBridge.Models.WhatsApp;
 using WhatsAppBridge.Models.WhatsApp.Flow;
 using WhatsAppBridge.Models.WhatsApp.Types;
 using WhatsAppBridge.Settings;
-using static WhatsAppBridge.Models.WhatsApp.SendMessageTemplateModel;
 
 namespace WhatsAppBridge.Handler
 {
@@ -2496,6 +2492,95 @@ namespace WhatsAppBridge.Handler
             {
                 StatusCode = 400,
                 Message = "Something went wrong"
+            };
+        }
+
+        #endregion
+
+        #region Analytics
+
+        /// <summary>
+        /// Fetch meta analytics 
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
+        public async Task<ApiResult> FetchConversationAnalytics(ConversationAnalyticsRequestDto model)
+        {
+            string requestStr = String.Empty;
+            string responseStr = String.Empty;
+            string filepath = String.Empty;
+            List<ConversationAnalyticsResponseDto> response = new List<ConversationAnalyticsResponseDto>();
+
+            try
+            {
+                _logger.LogDebug("Calling function FetchConversationAnalytics with received object={object}", JsonConvert.SerializeObject(model));
+
+                var senderNameInfo = await _integrationHandler.GetSenderInformation(model.ClientId, model.SenderId);
+                if (senderNameInfo == null)
+                    return new ApiResult { StatusCode = 404, Message = $"Sender name not found with clientId: {model.ClientId} and senderNameId: {model.SenderId}" };
+
+                _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {senderNameInfo.AccessToken}");
+
+                long startEpoch = CommonHelper.ConvertToEpoch(model.StartDate);
+                long endEpoch = CommonHelper.ConvertToEpoch(model.EndDate);
+
+                var apiCallStart = DateTime.UtcNow;
+                var endpoint = $"/{senderNameInfo.BusinessAccountId}?fields=conversation_analytics.start({startEpoch}).end({endEpoch}).phonenumber({senderNameInfo.PhoneNumber}).granularity(DAILY).dimensions([\"CONVERSATION_CATEGORY\",\"CONVERSATION_TYPE\",\"PHONE\"])";
+                var resp = await _httpClient.GetAsync(endpoint);
+                responseStr = await resp.Content.ReadAsStringAsync();
+
+                _logger.LogInformation("Received Conversation Analytics Response in function FetchConversationAnalytics with apiEndpoint={apiEndpoint} with received object={object} with request={request} and response={response} with apiResponseTime={apiResponseTime}", endpoint, JsonConvert.SerializeObject(model), requestStr, responseStr, DateTime.UtcNow.Subtract(apiCallStart).TotalMilliseconds);
+
+                var analyticsResponse = JsonConvert.DeserializeObject<ConversationAnalyticsResponseModel>(responseStr);
+
+                if (analyticsResponse != null
+                    && analyticsResponse.conversation_analytics != null
+                    && analyticsResponse.conversation_analytics.data != null
+                    && analyticsResponse.conversation_analytics.data.Count > 0)
+                {
+                    var dataList = analyticsResponse.conversation_analytics.data[0].data_points;
+                    foreach (var data in dataList)
+                    {
+                        var dataPoint = new ConversationAnalyticsResponseDto
+                        {
+                            ClientId = model.ClientId,
+                            SenderId = model.SenderId,
+                            Conversation = data.conversation,
+                            ConversationCategory = data.conversation_category,
+                            ConversationType = data.conversation_type,
+                            Cost = data.cost,
+                            PhoneNumber = data.phone_number,
+                            Start = data.start,
+                            End = data.end,
+                            StartDateUtc = data.StartDateUtc,
+                            EndDateUtc = data.EndDateUtc
+                        };
+
+                        response.Add(dataPoint);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Exception occurred {exception} when executing function FetchConversationAnalytics with received object={object} with request={request} and response={response}", ex, JsonConvert.SerializeObject(model), requestStr, responseStr);
+                response = null;
+            }
+
+            if (response == null || !response.Any())
+            {
+                return new ApiResult
+                {
+                    StatusCode = 400,
+                    Message = "Couldn't fetch conversation analytics"
+                };
+            }
+
+            return new ApiResult
+            {
+                Success = true,
+                StatusCode = 200,
+                Message = "Success",
+                Result = response
             };
         }
 

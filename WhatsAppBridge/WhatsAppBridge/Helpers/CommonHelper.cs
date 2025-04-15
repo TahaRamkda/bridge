@@ -65,13 +65,25 @@ namespace WhatsAppBridge.Helpers
         {
             try
             {
-                DateTime start = new DateTime(1970, 1, 1, 0, 0, 0, 0); //from start epoch time
-                start = start.AddSeconds(ticks); //add the seconds to the start DateTime
-                return start;
+                DateTime dateTime = DateTimeOffset.FromUnixTimeSeconds(ticks).UtcDateTime;
+                return dateTime;
             }
             catch (Exception ex)
             {
                 return DateTime.UtcNow;
+            }
+        }
+
+        public static long ConvertToEpoch(DateTime dateTime)
+        {
+            try
+            {
+                long epoch = new DateTimeOffset(dateTime).ToUnixTimeSeconds();
+                return epoch;
+            }
+            catch (Exception ex)
+            {
+                return 0;
             }
         }
 
