@@ -199,8 +199,8 @@ namespace WhatsAppBridge.Handler
                     Language = messageTemplate.language,
                     Status = messageTemplate.status,
                     IsApproved = messageTemplate.status == TemplateStatusModel.APPROVED.ToString() ? true : false,
-                    Category = messageTemplate.category,
-                    SubCategory = messageTemplate.sub_category
+                    //Category = messageTemplate.category,
+                    //SubCategory = messageTemplate.sub_category
                 };
 
                 if (sendRequestToIntegration)

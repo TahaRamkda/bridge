@@ -41,15 +41,24 @@ namespace WhatsAppBridge.Controllers
         }
 
         [HttpGet("GetTemplatebyId")]
-        public async Task<IActionResult> GetTemplatebyId(string clientId, string messageTemplateId)
+        public async Task<IActionResult> GetTemplatebyId(string clientId, string senderId, string messageTemplateId)
         {
-            _logger.LogInformation("Calling api GetTemplatebyId with templateId={templateId}", messageTemplateId);
+            _logger.LogInformation("Calling api GetTemplatebyId with clientId={clientId}, senderId={senderId}, templateId={templateId}", clientId, senderId, messageTemplateId);
 
             if (String.IsNullOrWhiteSpace(clientId))
             {
                 return Ok(new ApiResult
                 {
                     Message = "Client id shouldn't be empty",
+                    StatusCode = StatusCodes.Status400BadRequest
+                });
+            }
+
+            if (String.IsNullOrWhiteSpace(senderId))
+            {
+                return Ok(new ApiResult
+                {
+                    Message = "Sender id shouldn't be empty",
                     StatusCode = StatusCodes.Status400BadRequest
                 });
             }
@@ -66,18 +75,18 @@ namespace WhatsAppBridge.Controllers
             var fullUrl = CommonHelper.GetFullUrl(baseUrl, $"/{messageTemplateId}");
             _logger.LogDebug("Calling WhatsApp GetTemplateById method with templateId={templateId} with url={url}", messageTemplateId, fullUrl);
 
-            var clientInfo = await _integrationHandler.GetClientInformation(clientId);
-            if (clientInfo == null)
+            var senderInfo = await _integrationHandler.GetSenderInformation(clientId, senderId);
+            if (senderInfo == null)
             {
                 return Ok(new ApiResult
                 {
                     StatusCode = 404,
-                    Message = $"Client not found with clientId: {clientId}"
+                    Message = $"Sender not found with clientId: {clientId} and senderId: {senderId}"
                 });
             }
 
             var apiCallStart = DateTime.UtcNow;
-            _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {clientInfo.AccessToken}");
+            _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {senderInfo.AccessToken}");
             var response = await _httpClient.GetAsync($"/{messageTemplateId}");
             var content = await response.Content.ReadAsStringAsync();
 
@@ -96,15 +105,24 @@ namespace WhatsAppBridge.Controllers
         }
 
         [HttpGet("SyncTemplatebyId")]
-        public async Task<IActionResult> SyncTemplatebyId(string clientId, string messageTemplateId)
+        public async Task<IActionResult> SyncTemplatebyId(string clientId, string senderId, string messageTemplateId)
         {
-            _logger.LogInformation("Calling api SyncTemplatebyId with templateId={templateId}", messageTemplateId);
+            _logger.LogInformation("Calling api SyncTemplatebyId with clientId={clientId}, senderId={senderId}, templateId={templateId}", clientId, senderId, messageTemplateId);
 
             if (String.IsNullOrWhiteSpace(clientId))
             {
                 return Ok(new ApiResult
                 {
                     Message = "Client id shouldn't be empty",
+                    StatusCode = StatusCodes.Status400BadRequest
+                });
+            }
+
+            if (String.IsNullOrWhiteSpace(senderId))
+            {
+                return Ok(new ApiResult
+                {
+                    Message = "Sender id shouldn't be empty",
                     StatusCode = StatusCodes.Status400BadRequest
                 });
             }
@@ -122,18 +140,18 @@ namespace WhatsAppBridge.Controllers
 
             _logger.LogDebug("Calling WhatsApp SyncTemplatebyId method with templateId={templateId} with url={url}", messageTemplateId, fullUrl);
 
-            var clientInfo = await _integrationHandler.GetClientInformation(clientId);
-            if (clientInfo == null)
+            var senderInfo = await _integrationHandler.GetSenderInformation(clientId, senderId);
+            if (senderInfo == null)
             {
                 return Ok(new ApiResult
                 {
                     StatusCode = 404,
-                    Message = $"Client not found with clientId: {clientId}"
+                    Message = $"Sender not found with clientId: {clientId} and senderId: {senderId}"
                 });
             }
 
             var apiCallStart = DateTime.UtcNow;
-            _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {clientInfo.AccessToken}");
+            _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {senderInfo.AccessToken}");
             var response = await _httpClient.GetAsync($"/{messageTemplateId}");
             var content = await response.Content.ReadAsStringAsync();
 

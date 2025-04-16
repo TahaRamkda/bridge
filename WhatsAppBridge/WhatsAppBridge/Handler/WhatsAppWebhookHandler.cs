@@ -114,19 +114,27 @@ namespace WhatsAppBridge.Handler
 
                 TemplateUpdateWebhookModel templateUpdate = JsonConvert.DeserializeObject<TemplateUpdateWebhookModel>(JsonConvert.SerializeObject(change.value));
 
-                var endpoint = $"/{templateUpdate.message_template_id}";
-                _logger.LogDebug("Calling WhatsApp HandleMessageTemplateStatusUpdate method with templateId={templateId} with apiEndpoint={apiEndpoint}", templateUpdate.message_template_id, endpoint);
+                //var endpoint = $"/{templateUpdate.message_template_id}";
+                //_logger.LogDebug("Calling WhatsApp HandleMessageTemplateStatusUpdate method with templateId={templateId} with apiEndpoint={apiEndpoint}", templateUpdate.message_template_id, endpoint);
 
-                var clientInfo = await _integrationHandler.GetClientInformation(clientId);
-                _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {clientInfo.AccessToken}");
+                //var clientInfo = await _integrationHandler.GetClientInformation(clientId);
+                //_httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {clientInfo.AccessToken}");
 
-                var apiCallStart = DateTime.UtcNow;
-                var response = await _httpClient.GetAsync(endpoint);
-                var content = await response.Content.ReadAsStringAsync();
+                //var apiCallStart = DateTime.UtcNow;
+                //var response = await _httpClient.GetAsync(endpoint);
+                //var content = await response.Content.ReadAsStringAsync();
 
-                _logger.LogInformation("Received response of WhatsApp HandleMessageTemplateStatusUpdate method with templateId={templateId} with apiEndpoint={apiEndpoint} and content={content} with apiResponseTime={apiResponseTime}", templateUpdate.message_template_id, endpoint, content, DateTime.UtcNow.Subtract(apiCallStart).TotalMilliseconds);
+                //_logger.LogInformation("Received response of WhatsApp HandleMessageTemplateStatusUpdate method with templateId={templateId} with apiEndpoint={apiEndpoint} and content={content} with apiResponseTime={apiResponseTime}", templateUpdate.message_template_id, endpoint, content, DateTime.UtcNow.Subtract(apiCallStart).TotalMilliseconds);
 
-                var messageTemplate = JsonConvert.DeserializeObject<MessageTemplateModel>(await response.Content.ReadAsStringAsync());
+                //var messageTemplate = JsonConvert.DeserializeObject<MessageTemplateModel>(await response.Content.ReadAsStringAsync());
+
+                var messageTemplate = new MessageTemplateModel
+                {
+                    id = templateUpdate.message_template_id,
+                    language = templateUpdate.message_template_language,
+                    name = templateUpdate.message_template_name,
+                    status = templateUpdate.Event
+                };
 
                 await _integrationHandler.SendMessageTemplateStatusUpdate(messageTemplate, true);
 
