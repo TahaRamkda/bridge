@@ -494,6 +494,14 @@ namespace WhatsAppBridge.Handler
                     }
                 };
             }
+            else if (model.AskForLocation)
+            {
+                interactive.interactive.type = "location_request_message";
+                interactive.interactive.action = new
+                {
+                    name = "send_location"
+                };
+            }
 
             return interactive;
         }
@@ -1762,7 +1770,12 @@ namespace WhatsAppBridge.Handler
 
                 var messageTemplates = JsonConvert.DeserializeObject<MessageTemplateListResponse>(responseStr);
                 if (messageTemplates != null && messageTemplates.data != null && messageTemplates.data.Any())
-                    messageTemplateId = messageTemplates.data[0].id;
+                {
+                    var existingTemplate = messageTemplates.data[0];
+                    if (existingTemplate.name.Equals(model.Name, StringComparison.InvariantCultureIgnoreCase)
+                        && existingTemplate.language.Equals(model.LanguageCode, StringComparison.InvariantCultureIgnoreCase))
+                        messageTemplateId = messageTemplates.data[0].id;
+                }
 
                 var template = new CreateMessageTemplateRequestModel
                 {

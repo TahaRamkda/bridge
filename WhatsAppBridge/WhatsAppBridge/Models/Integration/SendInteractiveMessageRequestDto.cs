@@ -14,6 +14,7 @@
         public HeaderDto Header { get; set; }
         public BodyDto Body { get; set; }
         public FooterDto Footer { get; set; }
+        public bool AskForLocation { get; set; }
         public List<ButtonDto> Buttons { get; set; }
         public FlowActionDto FlowAction { get; set; }
 
