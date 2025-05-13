@@ -265,7 +265,7 @@ namespace WhatsAppBridge.Handler
                         endpoint = $"/bridge/flowresponse";
                     if (updateDto.order != null)
                         endpoint = $"/bridge/order";
-
+                    
                     _logger.LogDebug("Executing function MessageReceiveUpdate Calling Integration whatsappmessagereceive method with clientId={clientId} with apiEndpoint={apiEndpoint} and request={request}", updateDto.client_Id, endpoint, requestStr);
 
                     var apiCallStart = DateTime.UtcNow;
