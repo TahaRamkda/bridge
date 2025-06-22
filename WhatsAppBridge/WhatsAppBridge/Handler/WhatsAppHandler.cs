@@ -421,7 +421,30 @@ namespace WhatsAppBridge.Handler
             }
 
             //BUTTONS
-            if (model.Buttons != null && model.Buttons.Count() > 0)
+            if (model.AskForLocation)
+            {
+                interactive.interactive.type = "location_request_message";
+                interactive.interactive.action = new
+                {
+                    name = "send_location"
+                };
+            }
+            else if (model.FlowAction != null) //FLOW
+            {
+                interactive.interactive.type = "flow";
+                interactive.interactive.action = new
+                {
+                    name = "flow",
+                    parameters = new
+                    {
+                        flow_message_version = model.FlowAction.Version,
+                        flow_id = model.FlowAction.FlowId,
+                        flow_cta = model.FlowAction.ButtonText,
+                        flow_token = model.FlowAction?.Token
+                    }
+                };
+            }
+            else if (model.Buttons != null && model.Buttons.Count() > 0)
             {
                 if (model.Buttons.Any(x => x.Type.ToUpper() == TemplateButtonTypeModel.URL)) //BUTTON URL
                 {
@@ -479,30 +502,7 @@ namespace WhatsAppBridge.Handler
                     };
                 }
             }
-            else if (model.FlowAction != null) //FLOW
-            {
-                interactive.interactive.type = "flow";
-                interactive.interactive.action = new
-                {
-                    name = "flow",
-                    parameters = new
-                    {
-                        flow_message_version = model.FlowAction.Version,
-                        flow_id = model.FlowAction.FlowId,
-                        flow_cta = model.FlowAction.ButtonText,
-                        flow_token = model.FlowAction?.Token
-                    }
-                };
-            }
-            else if (model.AskForLocation)
-            {
-                interactive.interactive.type = "location_request_message";
-                interactive.interactive.action = new
-                {
-                    name = "send_location"
-                };
-            }
-
+              
             return interactive;
         }
 

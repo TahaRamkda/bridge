@@ -10,7 +10,7 @@ namespace WhatsAppBridge.Controllers
     public class HomeController : ControllerBase
     {
         private readonly ILogger<HomeController> _logger;
-
+        
         public HomeController(ILogger<HomeController> logger)
         {
             _logger = logger;
@@ -18,9 +18,8 @@ namespace WhatsAppBridge.Controllers
 
         [HttpGet]
         [Route("/")]
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         { 
-            _logger.LogInformation("I am alive");
             return Content("Alive");
         }
     }
