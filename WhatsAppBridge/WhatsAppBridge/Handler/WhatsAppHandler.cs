@@ -2602,6 +2602,81 @@ namespace WhatsAppBridge.Handler
             };
         }
 
+
+
+        public async Task<ApiResult> FetchTemplateAnalytics(TemplateAnalyticsRequestDto model)
+        {
+            string requestStr = string.Empty;
+            string responseStr = string.Empty;
+
+            try
+            {
+                _logger.LogDebug("Calling function FetchTemplateAnalytics with received object={object}", JsonConvert.SerializeObject(model));
+
+                var senderNameInfo = await _integrationHandler.GetSenderInformation(model.ClientId, model.SenderId);
+                if (senderNameInfo == null)
+                {
+                    return new ApiResult
+                    {
+                        StatusCode = 404,
+                        Message = $"Sender name not found with clientId: {model.ClientId} and senderNameId: {model.SenderId}"
+                    };
+                }
+
+                _httpClient.DefaultRequestHeaders.Clear();
+                _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {senderNameInfo.AccessToken}");
+
+                long startEpoch = CommonHelper.ConvertToEpoch(model.StartDate);
+                long endEpoch = CommonHelper.ConvertToEpoch(model.EndDate);
+
+                var apiCallStart = DateTime.UtcNow;
+                var endpoint = $"/{senderNameInfo.BusinessAccountId}/template_analytics?" +
+                               $"start={startEpoch}&" +
+                               $"end={endEpoch}&" +
+                               $"granularity=daily&" +
+                               $"metric_types=cost%2Cclicked%2Cdelivered%2Cread%2Csent&" +
+                               $"template_ids=[{model.TemplateId}]";
+
+                var resp = await _httpClient.GetAsync(endpoint);
+                responseStr = await resp.Content.ReadAsStringAsync();
+
+                _logger.LogInformation(
+                    "Received Template Analytics Response in function FetchTemplateAnalytics | endpoint={endpoint} | request={request} | response={response} | responseTime={responseTime}ms",
+                    endpoint, requestStr, responseStr, DateTime.UtcNow.Subtract(apiCallStart).TotalMilliseconds);
+
+                if (!resp.IsSuccessStatusCode)
+                {
+                    return new ApiResult
+                    {
+                        StatusCode = (int)resp.StatusCode,
+                        Message = $"Failed to fetch data. Status: {(int)resp.StatusCode}",
+                        Result = responseStr
+                    };
+                }
+                var analyticsResponse = JsonConvert.DeserializeObject<TemplateAnalyticsResponseDto>(responseStr);
+
+                return new ApiResult
+                {
+                    Success = true,
+                    StatusCode = 200,
+                    Message = "Success",
+                    Result = analyticsResponse.Data[0]
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Exception in FetchTemplateAnalytics: {exception} | input={input} | response={response}",
+                    ex, JsonConvert.SerializeObject(model), responseStr);
+
+                return new ApiResult
+                {
+                    StatusCode = 500,
+                    Message = "Exception occurred while fetching template analytics.",
+                    Result = ex.Message
+                };
+            }
+        }
+
         #endregion
 
         #endregion

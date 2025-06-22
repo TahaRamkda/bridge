@@ -33,7 +33,7 @@ namespace WhatsAppBridge.Controllers
             _integrationHandler = integrationHandler;
         }
 
-        #region Utilities
+       #region Utilities
 
         [NonAction]
         private bool VerifyMetaWebhook(string body, string receivedSignature, string appSecret)
