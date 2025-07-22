@@ -30,6 +30,7 @@
             public bool billable { get; set; }
             public string pricing_model { get; set; }
             public string category { get; set; }
+            public string type { get; set; }
         }
 
         public class Error

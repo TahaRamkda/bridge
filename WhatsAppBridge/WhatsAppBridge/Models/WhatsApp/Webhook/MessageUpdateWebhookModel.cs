@@ -73,6 +73,7 @@ namespace WhatsAppBridge.Models.WhatsApp.Webhook
                 public bool billable { get; set; }
                 public string pricing_model { get; set; }
                 public string category { get; set; }
+                public string type { get; set; }
             }
 
             public class Error
@@ -218,7 +219,7 @@ namespace WhatsAppBridge.Models.WhatsApp.Webhook
                 public string catalog_id { get; set; }
                 public string text { get; set; }
                 public List<Item> product_items { get; set; }
-                  
+
                 public class Item
                 {
                     public string product_retailer_id { get; set; }

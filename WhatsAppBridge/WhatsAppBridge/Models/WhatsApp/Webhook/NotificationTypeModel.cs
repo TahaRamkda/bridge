@@ -4,5 +4,6 @@
     {
         public const string MessageTemplateStatusUpdate = "message_template_status_update";
         public const string MessageUpdate = "messages";
+        public const string UserPreferences = "user_preferences";
     }
 }

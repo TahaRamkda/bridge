@@ -107,6 +107,9 @@ namespace WhatsAppBridge.Controllers
                         case NotificationTypeModel.MessageUpdate:
                             await _whatsAppWebhookHandler.HandleMessageStatusUpdate(clientId, change);
                             break;
+                        case NotificationTypeModel.UserPreferences:
+                            await _whatsAppWebhookHandler.HandleUserPreferenceUpdate(clientId, change);
+                            break;
                         default:
                             continue;
                     }

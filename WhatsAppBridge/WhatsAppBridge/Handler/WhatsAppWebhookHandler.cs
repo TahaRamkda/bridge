@@ -188,8 +188,9 @@ namespace WhatsAppBridge.Handler
                             updateDto.pricing = new MessageStatusUpdateDto.Pricing
                             {
                                 billable = status.pricing.billable,
-                                category = status.pricing.category,
-                                pricing_model = status.pricing.pricing_model
+                                category = String.Concat(status.pricing.category, '>', status.pricing.type),
+                                pricing_model = status.pricing.pricing_model,
+                                type = status.pricing.type
                             };
                         }
 
@@ -411,6 +412,52 @@ namespace WhatsAppBridge.Handler
             catch (Exception ex)
             {
                 _logger.LogError("Exception occurred {exception} when executing function HandleMessageStatusUpdate with received clientId {clientId} and object {object}", ex, clientId, JsonConvert.SerializeObject(change));
+            }
+        }
+
+        public async Task HandleUserPreferenceUpdate(string clientId, Change change)
+        {
+            try
+            {
+                _logger.LogDebug("Calling function HandleUserPreferenceUpdate with received clientId {clientId} and object {object}", clientId, JsonConvert.SerializeObject(change));
+
+                UserPreferenceUpdateWebhookModel userPreferenceUpdate = JsonConvert.DeserializeObject<UserPreferenceUpdateWebhookModel>(JsonConvert.SerializeObject(change.value));
+                if (userPreferenceUpdate.user_preferences != null && userPreferenceUpdate.user_preferences.Any())
+                {
+                    foreach (var preference in userPreferenceUpdate.user_preferences)
+                    {
+                        if (String.IsNullOrWhiteSpace(preference.category) || preference.category.ToLower() != "marketing_messages")
+                            continue;
+
+                        //stop and resume
+                        bool value = !String.IsNullOrWhiteSpace(preference.value) && preference.value.ToLower() == "resume";
+
+                        var updateDto = new UserPreferenceUpdateDto
+                        {
+                            client_Id = clientId,
+                            category = preference.category,
+                            value = value,
+                            comments = preference.detail,
+                            update_dateTime = CommonHelper.ConvertDateTimeFormat(CommonHelper.ConvertFromEpoch(preference.timestamp)),
+                            phone_number = preference.wa_id
+                        };
+
+                        if (userPreferenceUpdate.metadata != null)
+                        {
+                            updateDto.phone_number_Id = new UserPreferenceUpdateDto.PhoneNumber
+                            {
+                                display_phone_number = userPreferenceUpdate.metadata.display_phone_number,
+                                phone_number_id = userPreferenceUpdate.metadata.phone_number_id
+                            };
+                        }
+
+                        await _integrationHandler.SendUserPreferenceUpdate(updateDto);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Exception occurred {exception} when executing function HandleUserPreferenceUpdate with received clientId {clientId} and object {object}", ex, clientId, JsonConvert.SerializeObject(change));
             }
         }
 

@@ -265,7 +265,7 @@ namespace WhatsAppBridge.Handler
                         endpoint = $"/bridge/flowresponse";
                     if (updateDto.order != null)
                         endpoint = $"/bridge/order";
-                    
+
                     _logger.LogDebug("Executing function MessageReceiveUpdate Calling Integration whatsappmessagereceive method with clientId={clientId} with apiEndpoint={apiEndpoint} and request={request}", updateDto.client_Id, endpoint, requestStr);
 
                     var apiCallStart = DateTime.UtcNow;
@@ -287,6 +287,43 @@ namespace WhatsAppBridge.Handler
             catch (Exception ex)
             {
                 _logger.LogError("Exception occurred {exception} when executing function MessageReceiveUpdate with received object={object}", ex, JsonConvert.SerializeObject(updateDto));
+            }
+        }
+
+        public async Task SendUserPreferenceUpdate(UserPreferenceUpdateDto updateDto)
+        {
+            try
+            {
+                _logger.LogDebug("Calling function SendUserPreferenceUpdate with received object={object}", JsonConvert.SerializeObject(updateDto));
+
+                string requestStr = String.Empty;
+                string endpoint = String.Empty;
+                string responseStr = String.Empty;
+
+                try
+                { 
+                    requestStr = JsonConvert.SerializeObject(updateDto);
+                    endpoint = $"/bridge/userpreferenceupdate";
+
+                    _logger.LogDebug("Executing function SendUserPreferenceUpdate Calling Integration whatsappmessagestatusupdate method with clientId={clientId} with apiEndpoint={apiEndpoint} and request={request}", updateDto.client_Id, endpoint, requestStr);
+
+                    var apiCallStart = DateTime.UtcNow;
+                    var response = await _httpClient.PostAsync(endpoint, new StringContent(requestStr, null, "application/json"));
+                    if (!response.IsSuccessStatusCode)
+                        responseStr = String.Concat("Status code: ", response.StatusCode, " | Reason: ", response.ReasonPhrase);
+                    else
+                        responseStr = await response.Content.ReadAsStringAsync();
+
+                    _logger.LogInformation("Received response when executing function SendUserPreferenceUpdate of Integration whatsappmessagestatusupdate method with clientId={clientId} with apiEndpoint={apiEndpoint} and request={request} and content={content} with apiResponseTime={apiResponseTime}", updateDto.client_Id, endpoint, requestStr, responseStr, DateTime.UtcNow.Subtract(apiCallStart).TotalMilliseconds);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError("Exception occurred {exception} when executing function SendUserPreferenceUpdate of Integration whatsappmessagestatusupdate method with clientId={clientId} with url={url} and request={request} and content {content}", ex, updateDto.client_Id, endpoint, requestStr, responseStr);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Exception occurred {exception} when executing function SendUserPreferenceUpdate with received object={object}", ex, JsonConvert.SerializeObject(updateDto));
             }
         }
 
