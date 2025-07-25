@@ -1,6 +1,6 @@
 ﻿namespace WhatsAppBridge.Models.Integration
 {
-    public class ConversationAnalyticsRequestDto
+    public class AnalyticsRequestDto
     {
         public string ClientId { get; set; }
         public string SenderId { get; set; }

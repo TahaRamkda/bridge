@@ -2522,9 +2522,9 @@ namespace WhatsAppBridge.Handler
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
-        public async Task<ApiResult> FetchConversationAnalytics(ConversationAnalyticsRequestDto model)
+        public async Task<ApiResult> FetchConversationAnalytics(AnalyticsRequestDto model)
         {
-            string requestStr = String.Empty;
+             string requestStr = String.Empty;
             string responseStr = String.Empty;
             string filepath = String.Empty;
             List<ConversationAnalyticsResponseDto> response = new List<ConversationAnalyticsResponseDto>();
@@ -2544,19 +2544,20 @@ namespace WhatsAppBridge.Handler
 
                 var apiCallStart = DateTime.UtcNow;
                 var endpoint = $"/{senderNameInfo.BusinessAccountId}?fields=conversation_analytics.start({startEpoch}).end({endEpoch}).phonenumber({senderNameInfo.PhoneNumber}).granularity(DAILY).dimensions([\"CONVERSATION_CATEGORY\",\"CONVERSATION_TYPE\",\"PHONE\"])";
+                //var endpoint = $"/{senderNameInfo.BusinessAccountId}?fields=pricing_analytics.start({startEpoch}).end({endEpoch}).phonenumber({senderNameInfo.PhoneNumber}).granularity(DAILY).dimensions([\"PRICING_CATEGORY\",\"PRICING_TYPE\",\"PHONE\",\"COUNTRY\"])";
                 var resp = await _httpClient.GetAsync(endpoint);
                 responseStr = await resp.Content.ReadAsStringAsync();
-
                 _logger.LogInformation("Received Conversation Analytics Response in function FetchConversationAnalytics with apiEndpoint={apiEndpoint} with received object={object} with request={request} and response={response} with apiResponseTime={apiResponseTime}", endpoint, JsonConvert.SerializeObject(model), requestStr, responseStr, DateTime.UtcNow.Subtract(apiCallStart).TotalMilliseconds);
+             
+               
+                var conversationanalyticsResponse = JsonConvert.DeserializeObject<ConversationAnalyticsResponseModel>(responseStr);
 
-                var analyticsResponse = JsonConvert.DeserializeObject<ConversationAnalyticsResponseModel>(responseStr);
-
-                if (analyticsResponse != null
-                    && analyticsResponse.conversation_analytics != null
-                    && analyticsResponse.conversation_analytics.data != null
-                    && analyticsResponse.conversation_analytics.data.Count > 0)
+                if (conversationanalyticsResponse != null
+                    && conversationanalyticsResponse.conversation_analytics != null
+                    && conversationanalyticsResponse.conversation_analytics.data != null
+                    && conversationanalyticsResponse.conversation_analytics.data.Count > 0)
                 {
-                    var dataList = analyticsResponse.conversation_analytics.data[0].data_points;
+                    var dataList = conversationanalyticsResponse.conversation_analytics.data[0].data_points;
                     foreach (var data in dataList)
                     {
                         var dataPoint = new ConversationAnalyticsResponseDto
@@ -2568,6 +2569,168 @@ namespace WhatsAppBridge.Handler
                             ConversationType = data.conversation_type,
                             Cost = data.cost,
                             PhoneNumber = data.phone_number,
+                            Start = data.start,
+                            End = data.end,
+                            StartDateUtc = data.StartDateUtc,
+                            EndDateUtc = data.EndDateUtc
+                        };
+
+                        response.Add(dataPoint);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Exception occurred {exception} when executing function FetchConversationAnalytics with received object={object} with request={request} and response={response}", ex, JsonConvert.SerializeObject(model), requestStr, responseStr);
+                response = null;
+            }
+
+            if (response == null || !response.Any())
+            {
+                return new ApiResult
+                {
+                    StatusCode = 400,
+                    Message = "Couldn't fetch conversation analytics"
+                };
+            }
+
+            return new ApiResult
+            {
+                Success = true,
+                StatusCode = 200,
+                Message = "Success",
+                Result = response
+            };
+        }
+
+
+
+        public async Task<ApiResult> FetchPricingAnalytics(AnalyticsRequestDto model)
+        {
+            string requestStr = String.Empty;
+            string responseStr = String.Empty;
+            string filepath = String.Empty;
+            List<PricingAnalyticsResponseDto> response = new List<PricingAnalyticsResponseDto>();
+
+            try
+            {
+                _logger.LogDebug("Calling function FetchConversationAnalytics with received object={object}", JsonConvert.SerializeObject(model));
+
+                var senderNameInfo = await _integrationHandler.GetSenderInformation(model.ClientId, model.SenderId);
+                if (senderNameInfo == null)
+                    return new ApiResult { StatusCode = 404, Message = $"Sender name not found with clientId: {model.ClientId} and senderNameId: {model.SenderId}" };
+
+                _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {senderNameInfo.AccessToken}");
+
+                long startEpoch = CommonHelper.ConvertToEpoch(model.StartDate);
+                long endEpoch = CommonHelper.ConvertToEpoch(model.EndDate);
+
+                var apiCallStart = DateTime.UtcNow;
+                //var endpoint = $"/{senderNameInfo.BusinessAccountId}?fields=conversation_analytics.start({startEpoch}).end({endEpoch}).phonenumber({senderNameInfo.PhoneNumber}).granularity(DAILY).dimensions([\"CONVERSATION_CATEGORY\",\"CONVERSATION_TYPE\",\"PHONE\"])";
+                var endpoint = $"/{senderNameInfo.BusinessAccountId}?fields=pricing_analytics.start({startEpoch}).end({endEpoch}).phonenumber({senderNameInfo.PhoneNumber}).granularity(DAILY).dimensions([\"PRICING_CATEGORY\",\"PRICING_TYPE\",\"PHONE\",\"COUNTRY\"])";
+                var resp = await _httpClient.GetAsync(endpoint);
+                responseStr = await resp.Content.ReadAsStringAsync();
+                _logger.LogInformation("Received Conversation Analytics Response in function FetchConversationAnalytics with apiEndpoint={apiEndpoint} with received object={object} with request={request} and response={response} with apiResponseTime={apiResponseTime}", endpoint, JsonConvert.SerializeObject(model), requestStr, responseStr, DateTime.UtcNow.Subtract(apiCallStart).TotalMilliseconds);
+
+
+                var pricinganalyticsResponse = JsonConvert.DeserializeObject<PricingAnalyticsResponseModel>(responseStr);
+
+                if (pricinganalyticsResponse != null
+                    && pricinganalyticsResponse.pricing_analytics != null
+                    && pricinganalyticsResponse.pricing_analytics.data != null
+                    && pricinganalyticsResponse.pricing_analytics.data.Count > 0)
+                {
+                    var dataList = pricinganalyticsResponse.pricing_analytics.data[0].data_points;
+                    foreach (var data in dataList)
+                    {
+                        var dataPoint = new PricingAnalyticsResponseDto
+                        {
+                            ClientId = model.ClientId,
+                            SenderId = model.SenderId,
+                            Conversation = data.conversation,
+                            PricingCategory = data.pricing_category,
+                            PricingType = data.pricing_type,
+                            Cost = data.cost,
+                            PhoneNumber = data.phone_number,
+                            Start = data.start,
+                            End = data.end,
+                            StartDateUtc = data.StartDateUtc,
+                            EndDateUtc = data.EndDateUtc
+                        };
+
+                        response.Add(dataPoint);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Exception occurred {exception} when executing function FetchConversationAnalytics with received object={object} with request={request} and response={response}", ex, JsonConvert.SerializeObject(model), requestStr, responseStr);
+                response = null;
+            }
+
+            if (response == null || !response.Any())
+            {
+                return new ApiResult
+                {
+                    StatusCode = 400,
+                    Message = "Couldn't fetch conversation analytics"
+                };
+            }
+
+            return new ApiResult
+            {
+                Success = true,
+                StatusCode = 200,
+                Message = "Success",
+                Result = response
+            };
+        }
+
+
+        public async Task<ApiResult> FetchAnalytics(AnalyticsRequestDto model)
+        {
+            string requestStr = String.Empty;
+            string responseStr = String.Empty;
+            string filepath = String.Empty;
+            List<AnalyticsResponseDto> response = new List<AnalyticsResponseDto>();
+
+            try
+            {
+                _logger.LogDebug("Calling function FetchAnalytics with received object={object}", JsonConvert.SerializeObject(model));
+
+                var senderNameInfo = await _integrationHandler.GetSenderInformation(model.ClientId, model.SenderId);
+                if (senderNameInfo == null)
+                    return new ApiResult { StatusCode = 404, Message = $"Sender name not found with clientId: {model.ClientId} and senderNameId: {model.SenderId}" };
+
+                _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {senderNameInfo.AccessToken}");
+
+                long startEpoch = CommonHelper.ConvertToEpoch(model.StartDate);
+                long endEpoch = CommonHelper.ConvertToEpoch(model.EndDate);
+
+                var apiCallStart = DateTime.UtcNow;
+                //var endpoint = $"/{senderNameInfo.BusinessAccountId}?fields=conversation_analytics.start({startEpoch}).end({endEpoch}).phonenumber({senderNameInfo.PhoneNumber}).granularity(DAILY).dimensions([\"CONVERSATION_CATEGORY\",\"CONVERSATION_TYPE\",\"PHONE\"])";
+                var endpoint = $"/{senderNameInfo.BusinessAccountId}?fields=analytics.start({startEpoch}).end({endEpoch}).granularity(DAY)";
+                var resp = await _httpClient.GetAsync(endpoint);
+                responseStr = await resp.Content.ReadAsStringAsync();
+                _logger.LogInformation("Received Conversation Analytics Response in function FetchConversationAnalytics with apiEndpoint={apiEndpoint} with received object={object} with request={request} and response={response} with apiResponseTime={apiResponseTime}", endpoint, JsonConvert.SerializeObject(model), requestStr, responseStr, DateTime.UtcNow.Subtract(apiCallStart).TotalMilliseconds);
+
+
+                var AnalyticsResponse = JsonConvert.DeserializeObject<AnalyticsResponseModel>(responseStr);
+
+                if (AnalyticsResponse != null
+                    && AnalyticsResponse.analytics != null
+                    && AnalyticsResponse.analytics.data_points.Count > 0)
+                {
+                    var dataList = AnalyticsResponse.analytics.data_points;
+                    foreach (var data in dataList)
+                    {
+                        var dataPoint = new AnalyticsResponseDto
+                        {
+                            ClientId = model.ClientId,
+                            SenderId = model.SenderId,
+                            sent = data.sent,
+                            delivered = data.delivered,
+                            PhoneNumber = AnalyticsResponse.analytics.phone_numbers,
                             Start = data.start,
                             End = data.end,
                             StartDateUtc = data.StartDateUtc,

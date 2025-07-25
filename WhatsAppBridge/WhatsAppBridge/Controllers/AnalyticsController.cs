@@ -34,7 +34,7 @@ namespace WhatsAppBridge.Controllers
         #region Methods
 
         [HttpPost("ConversationAnalytics")]
-        public async Task<IActionResult> ConversationAnalytics([FromBody] ConversationAnalyticsRequestDto model)
+        public async Task<IActionResult> ConversationAnalytics([FromBody] AnalyticsRequestDto model)
         {
             _logger.LogInformation("Received ConversationAnalytics request with data={data}", JsonConvert.SerializeObject(model));
 
@@ -51,6 +51,50 @@ namespace WhatsAppBridge.Controllers
                 return Ok(new ApiResult { Message = "Start date shoudn't be greater than end date", StatusCode = StatusCodes.Status400BadRequest });
 
             var resp = await _whatsAppHandler.FetchConversationAnalytics(model);
+            return Ok(resp);
+        }
+
+        [HttpPost("PriceAnalytics")]
+        public async Task<IActionResult> PriceAnalytics([FromBody] AnalyticsRequestDto model)
+        {
+            _logger.LogInformation("Received PriceAnalytics request with data={data}", JsonConvert.SerializeObject(model));
+
+            if (model == null)
+                return Ok(new ApiResult { Message = "Bad Request", StatusCode = StatusCodes.Status400BadRequest });
+
+            if (String.IsNullOrWhiteSpace(model.ClientId))
+                return Ok(new ApiResult { Message = "Client Id shouldn't be empty", StatusCode = StatusCodes.Status400BadRequest });
+
+            if (String.IsNullOrWhiteSpace(model.SenderId))
+                return Ok(new ApiResult { Message = "Sender Name Id shouldn't be empty", StatusCode = StatusCodes.Status400BadRequest });
+
+            if (model.StartDate > model.EndDate)
+                return Ok(new ApiResult { Message = "Start date shoudn't be greater than end date", StatusCode = StatusCodes.Status400BadRequest });
+
+            var resp = await _whatsAppHandler.FetchPricingAnalytics(model);
+            return Ok(resp);
+        }
+
+
+
+        [HttpPost("Analytics")]
+        public async Task<IActionResult> Analytics([FromBody] AnalyticsRequestDto model)
+        {
+            _logger.LogInformation("Received Analytics request with data={data}", JsonConvert.SerializeObject(model));
+
+            if (model == null)
+                return Ok(new ApiResult { Message = "Bad Request", StatusCode = StatusCodes.Status400BadRequest });
+
+            if (String.IsNullOrWhiteSpace(model.ClientId))
+                return Ok(new ApiResult { Message = "Client Id shouldn't be empty", StatusCode = StatusCodes.Status400BadRequest });
+
+            if (String.IsNullOrWhiteSpace(model.SenderId))
+                return Ok(new ApiResult { Message = "Sender Name Id shouldn't be empty", StatusCode = StatusCodes.Status400BadRequest });
+
+            if (model.StartDate > model.EndDate)
+                return Ok(new ApiResult { Message = "Start date shoudn't be greater than end date", StatusCode = StatusCodes.Status400BadRequest });
+
+            var resp = await _whatsAppHandler.FetchAnalytics(model);
             return Ok(resp);
         }
 
