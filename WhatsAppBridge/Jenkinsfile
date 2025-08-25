@@ -10,7 +10,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/TahaRamkda/bridge.git'
+                git branch: 'Devops-Branch', url: 'https://github.com/TahaRamkda/bridge.git'
             }
         }
 
@@ -18,7 +18,7 @@ pipeline {
             steps {
                 sh """
                   echo Building Docker image: $ECR_REPO:$VERSION
-                  docker build -t $ECR_REPO:$VERSION .
+                  docker build -t $ECR_REPO:$VERSION -f WhatsAppBridge/WhatsAppBridge/Dockerfile .
                 """
             }
         }
