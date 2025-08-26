@@ -42,7 +42,7 @@ pipeline {
                     export AWS_REGION=${AWS_REGION}
 
                     aws eks update-kubeconfig \
-                        --name my-cluster \
+                        --name bct-cluster \
                         --region $AWS_REGION
 
                     kubectl set image deployment/bridge-deploy \
