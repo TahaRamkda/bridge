@@ -37,12 +37,19 @@ pipeline {
 
         stage('Update Kubernetes Deployment') {
             steps {
-                withCredentials([aws(credentialsId: 'iam_user_cred', region: "${AWS_REGION}")]) {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'iam_user_cred']]) {
                     sh """
-                      kubectl set image deployment/bridge-deploy \
+                    export AWS_REGION=${AWS_REGION}
+
+                    aws eks update-kubeconfig \
+                        --name my-cluster \
+                        --region $AWS_REGION
+
+                    kubectl set image deployment/bridge-deploy \
                         bridge=$ECR_REPO:$VERSION \
                         --namespace=qa
-                      kubectl rollout status deployment/bridge-deploy --namespace=qa
+
+                    kubectl rollout status deployment/bridge-deploy --namespace=qa
                     """
                 }
             }
