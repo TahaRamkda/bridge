@@ -1,10 +1,35 @@
 pipeline {
-    agent any
+    agent {
+        kubernetes {
+            yaml """
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: jenkins-kaniko
+spec:
+  serviceAccountName: jenkins-sa
+  containers:
+  - name: kaniko
+    image: gcr.io/kaniko-project/executor:latest
+    command:
+    - sleep
+    args:
+    - infinity
+    volumeMounts:
+    - name: workspace-volume
+      mountPath: /workspace
+  volumes:
+  - name: workspace-volume
+    emptyDir: {}
+"""
+        }
+    }
 
     environment {
-        AWS_REGION    = 'me-south-1'                   
-        ECR_REPO      = '223700470790.dkr.ecr.me-south-1.amazonaws.com/qa/whatsappbridge'
-        VERSION       = "1.0.0-${env.GIT_COMMIT[0..6]}"  
+        AWS_REGION = 'me-south-1'
+        ECR_REPO   = '223700470790.dkr.ecr.me-south-1.amazonaws.com/qa/whatsappbridge'
+        VERSION    = "1.0.0-${env.GIT_COMMIT[0..6]}"
     }
 
     stages {
@@ -14,22 +39,16 @@ pipeline {
             }
         }
 
-        stage('Docker Build') {
+        stage('Build & Push with Kaniko') {
             steps {
-                sh """
-                  echo Building Docker image: $ECR_REPO:$VERSION
-                  docker build -t $ECR_REPO:$VERSION -f WhatsAppBridge/WhatsAppBridge/Dockerfile .
-                """
-            }
-        }
-
-        stage('Docker Push to ECR') {
-            steps {
-                withCredentials([aws(credentialsId: 'iam_user_cred', region: "${AWS_REGION}")]) {
+                container('kaniko') {
                     sh """
-                      aws ecr get-login-password --region $AWS_REGION \
-                        | docker login --username AWS --password-stdin $ECR_REPO
-                      docker push $ECR_REPO:$VERSION
+                      /kaniko/executor \
+                        --context=${WORKSPACE}/WhatsAppBridge/WhatsAppBridge \
+                        --dockerfile=${WORKSPACE}/WhatsAppBridge/WhatsAppBridge/Dockerfile \
+                        --destination=$ECR_REPO:$VERSION \
+                        --single-snapshot \
+                        --verbosity=info
                     """
                 }
             }
@@ -37,21 +56,13 @@ pipeline {
 
         stage('Update Kubernetes Deployment') {
             steps {
-                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'iam_user_cred']]) {
-                    sh """
-                    export AWS_REGION=${AWS_REGION}
+                sh """
+                  kubectl set image deployment/bridge-deploy \
+                      bridge=$ECR_REPO:$VERSION \
+                      --namespace=qa
 
-                    aws eks update-kubeconfig \
-                        --name bct-cluster \
-                        --region $AWS_REGION
-
-                    kubectl set image deployment/bridge-deploy \
-                        bridge=$ECR_REPO:$VERSION \
-                        --namespace=qa
-
-                    kubectl rollout status deployment/bridge-deploy --namespace=qa
-                    """
-                }
+                  kubectl rollout status deployment/bridge-deploy --namespace=qa
+                """
             }
         }
     }
