@@ -1,0 +1,54 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - Devops-Branch
+
+env:
+  AWS_REGION: me-south-1
+  ECR_REPO: 223700470790.dkr.ecr.me-south-1.amazonaws.com/qa/whatsappbridge
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Set Version Tag
+        id: vars
+        run: echo "VERSION=1.0.0-${GITHUB_SHA::7}" >> $GITHUB_ENV
+
+      - name: Docker Build
+        run: |
+          echo "Building Docker image: $ECR_REPO:${{ env.VERSION }}"
+          docker build -t $ECR_REPO:${{ env.VERSION }} -f WhatsAppBridge/WhatsAppBridge/Dockerfile .
+
+      - name: Login to Amazon ECR
+        run: |
+          aws ecr get-login-password --region $AWS_REGION \
+            | docker login --username AWS --password-stdin $ECR_REPO
+
+      - name: Push Docker Image to ECR
+        run: |
+          docker push $ECR_REPO:${{ env.VERSION }}
+
+      - name: Update Kubeconfig
+        run: |
+          aws eks update-kubeconfig --region $AWS_REGION --name bct-cluster
+
+      - name: Update Kubernetes Deployment
+        run: |
+          kubectl set image deployment/bridge-deploy \
+            bridge=$ECR_REPO:${{ env.VERSION }} \
+            --namespace=qa
+          kubectl rollout status deployment/bridge-deploy --namespace=qa
